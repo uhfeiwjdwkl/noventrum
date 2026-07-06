@@ -13,14 +13,8 @@ export const Route = createFileRoute("/markets")({
   component: MarketsPage,
 });
 
-const INDICES = [
-  { symbol: "S&P 500", value: 5842.31, change: 0.42 },
-  { symbol: "NASDAQ", value: 18420.9, change: 0.68 },
-  { symbol: "DOW", value: 42568.12, change: -0.11 },
-  { symbol: "VIX", value: 14.6, change: -2.3 },
-  { symbol: "10Y Yield", value: 4.24, change: 0.08 },
-  { symbol: "Gold", value: 2685.4, change: 0.55 },
-];
+const INDICES: { symbol: string; value: number; change: number }[] = [];
+
 
 function MarketsPage() {
   const [q, setQ] = useState("");
