@@ -368,17 +368,17 @@ export function monthlyCashflow() {
 }
 
 export function netWorthSeries() {
-  // build synthetic history by walking backwards from current net worth
   const nw = netWorth();
   const months = 24;
   const out: { month: string; value: number }[] = [];
   let cur = nw;
   const growth = 0.014;
+  const localRand = mulberry32(1337);
   for (let i = 0; i < months; i++) {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
     out.push({ month: d.toISOString().slice(0, 7), value: Math.round(cur) });
-    cur = cur / (1 + growth + (rand() - 0.5) * 0.02);
+    cur = cur / (1 + growth + (localRand() - 0.5) * 0.02);
   }
   return out.reverse();
 }
