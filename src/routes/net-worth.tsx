@@ -26,7 +26,7 @@ function NetWorthPage() {
         <StatCard label="Net Worth" value={nw} change={change} hint="12 mo" />
         <StatCard label="Assets" value={totalAssets()} />
         <StatCard label="Liabilities" value={totalLiabilities()} />
-        <StatCard label="Debt Ratio" value={(totalLiabilities() / totalAssets()) * 100} currency={false} />
+        <StatCard label="Debt Ratio" value={(totalLiabilities() / totalAssets()) * 100} currency={false} suffix="%" />
       </div>
 
       <Card className="p-5 mb-6">

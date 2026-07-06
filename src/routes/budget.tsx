@@ -23,7 +23,7 @@ function BudgetPage() {
         <StatCard label="Total budget" value={totalLimit} />
         <StatCard label="Spent" value={totalSpent} />
         <StatCard label="Remaining" value={remaining} />
-        <StatCard label="Used" value={pct} currency={false} />
+        <StatCard label="Used" value={pct} currency={false} suffix="%" />
       </div>
 
       <Card className="p-5 mb-6">

@@ -63,7 +63,7 @@ function Dashboard() {
         <StatCard label="Net Worth" value={nw} change={nwChange} icon={<TrendingUp className="h-4 w-4" />} hint="12 mo" />
         <StatCard label="Total Assets" value={totalAssets()} icon={<Landmark className="h-4 w-4" />} />
         <StatCard label="Total Liabilities" value={totalLiabilities()} icon={<Wallet className="h-4 w-4" />} />
-        <StatCard label="Savings Rate" value={savingsRate} currency={false} change={4.2} icon={<Percent className="h-4 w-4" />} hint="vs last mo" />
+        <StatCard label="Savings Rate" value={savingsRate} currency={false} suffix="%" change={4.2} icon={<Percent className="h-4 w-4" />} hint="vs last mo" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
