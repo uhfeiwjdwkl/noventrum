@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { budgets, fmtCurrency } from "@/lib/finance/data";
 
 export const Route = createFileRoute("/budget")({
-  head: () => ({ meta: [{ title: "Budget — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Budget — Noventrum" }] }),
   component: BudgetPage,
 });
 

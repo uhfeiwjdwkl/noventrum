@@ -8,7 +8,7 @@ import { accounts, netWorth, totalAssets, totalLiabilities, netWorthSeries, fmtC
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/net-worth")({
-  head: () => ({ meta: [{ title: "Net Worth — FinFlow" }, { name: "description", content: "Assets, liabilities and net worth growth over time." }] }),
+  head: () => ({ meta: [{ title: "Net Worth — Noventrum" }, { name: "description", content: "Assets, liabilities and net worth growth over time." }] }),
   component: NetWorthPage,
 });
 

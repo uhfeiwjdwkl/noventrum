@@ -9,7 +9,7 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/markets")({
-  head: () => ({ meta: [{ title: "Markets — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Markets — Noventrum" }] }),
   component: MarketsPage,
 });
 

@@ -77,9 +77,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "FinFlow — Personal Finance & Wealth" },
+      { title: "Noventrum — Personal Finance & Wealth" },
       { name: "description", content: "Track net worth, budgets, income, expenses, and investments in one premium personal finance dashboard." },
-      { property: "og:title", content: "FinFlow — Personal Finance & Wealth" },
+      { property: "og:title", content: "Noventrum — Personal Finance & Wealth" },
       { property: "og:description", content: "Track net worth, budgets, income, expenses, and investments in one premium personal finance dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
