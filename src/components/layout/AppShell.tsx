@@ -1,0 +1,147 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  LayoutDashboard,
+  TrendingUp,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Receipt,
+  LineChart,
+  Briefcase,
+  CandlestickChart,
+  PiggyBank,
+  Wallet,
+  Target,
+  FileBarChart,
+  Settings,
+  Moon,
+  Sun,
+  Search,
+  Plus,
+  Bell,
+} from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+const NAV = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/net-worth", label: "Net Worth", icon: TrendingUp },
+  { to: "/income", label: "Income", icon: ArrowDownCircle },
+  { to: "/expenses", label: "Expenses", icon: ArrowUpCircle },
+  { to: "/transactions", label: "Transactions", icon: Receipt },
+  { to: "/investments", label: "Investments", icon: LineChart },
+  { to: "/portfolio", label: "Portfolio", icon: Briefcase },
+  { to: "/markets", label: "Markets", icon: CandlestickChart },
+  { to: "/budget", label: "Budget", icon: PiggyBank },
+  { to: "/accounts", label: "Accounts", icon: Wallet },
+  { to: "/goals", label: "Goals", icon: Target },
+  { to: "/reports", label: "Reports", icon: FileBarChart },
+  { to: "/settings", label: "Settings", icon: Settings },
+] as const;
+
+function useTheme() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem("finflow-theme");
+    const initial = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setDark(initial);
+    document.documentElement.classList.toggle("dark", initial);
+  }, []);
+  const toggle = () => {
+    setDark((d) => {
+      const nd = !d;
+      document.documentElement.classList.toggle("dark", nd);
+      localStorage.setItem("finflow-theme", nd ? "dark" : "light");
+      return nd;
+    });
+  };
+  return { dark, toggle };
+}
+
+export function AppShell({ children, title, subtitle, actions }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { dark, toggle } = useTheme();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <div className="min-h-dvh flex w-full bg-background text-foreground">
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed lg:sticky top-0 left-0 z-40 h-dvh w-64 shrink-0 border-r border-sidebar-border bg-sidebar transition-transform",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        )}
+      >
+        <div className="flex h-16 items-center gap-2 px-5 border-b border-sidebar-border">
+          <div className="h-8 w-8 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">F</div>
+          <div className="font-semibold tracking-tight">FinFlow</div>
+        </div>
+        <nav className="p-3 space-y-0.5 overflow-y-auto h-[calc(100dvh-4rem)]">
+          {NAV.map((n) => {
+            const active = n.to === "/" ? pathname === "/" : pathname.startsWith(n.to);
+            const Icon = n.icon;
+            return (
+              <Link
+                key={n.to}
+                to={n.to}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                )}
+              >
+                <Icon className={cn("h-4 w-4 shrink-0", active && "text-primary")} />
+                <span className="truncate">{n.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      {/* Main */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/80 backdrop-blur px-4 sm:px-6">
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </Button>
+          <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search transactions, tickers, accounts…" className="pl-9 h-9 bg-muted/40 border-transparent" />
+            </div>
+          </div>
+          <div className="flex-1 md:hidden" />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
+              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Notifications">
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Add</Button>
+          </div>
+        </header>
+
+        <div className="flex-1 min-w-0">
+          <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-[1600px] mx-auto w-full">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{title}</h1>
+                {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+              </div>
+              {actions && <div className="flex items-center gap-2">{actions}</div>}
+            </div>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
