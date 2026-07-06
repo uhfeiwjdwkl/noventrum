@@ -9,7 +9,7 @@ import { spendingByCategory, monthlyCashflow, transactions, budgets, fmtCurrency
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/expenses")({
-  head: () => ({ meta: [{ title: "Expenses — FinFlow" }, { name: "description", content: "Where your money goes, broken down by category." }] }),
+  head: () => ({ meta: [{ title: "Expenses — Noventrum" }, { name: "description", content: "Where your money goes, broken down by category." }] }),
   component: ExpensesPage,
 });
 

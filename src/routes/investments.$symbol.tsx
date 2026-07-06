@@ -9,7 +9,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/investments/$symbol")({
-  head: ({ params }) => ({ meta: [{ title: `${params.symbol} — FinFlow` }] }),
+  head: ({ params }) => ({ meta: [{ title: `${params.symbol} — Noventrum` }] }),
   component: HoldingPage,
   notFoundComponent: () => (
     <AppShell title="Not found"><Card className="p-8 text-center">Holding not found. <Link to="/investments" className="text-primary underline">Back to investments</Link></Card></AppShell>

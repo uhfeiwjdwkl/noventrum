@@ -8,7 +8,7 @@ import { incomeBySource, monthlyCashflow, transactions, fmtCurrency } from "@/li
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/income")({
-  head: () => ({ meta: [{ title: "Income — FinFlow" }, { name: "description", content: "All income sources — salary, dividends, interest and more." }] }),
+  head: () => ({ meta: [{ title: "Income — Noventrum" }, { name: "description", content: "All income sources — salary, dividends, interest and more." }] }),
   component: IncomePage,
 });
 

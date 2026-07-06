@@ -7,7 +7,7 @@ import { accounts, totalAssets, totalLiabilities, fmtCurrency } from "@/lib/fina
 import { Building2, CreditCard, Landmark, Wallet, TrendingUp, Home, Car } from "lucide-react";
 
 export const Route = createFileRoute("/accounts")({
-  head: () => ({ meta: [{ title: "Accounts — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Accounts — Noventrum" }] }),
   component: AccountsPage,
 });
 

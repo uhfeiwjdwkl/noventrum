@@ -7,7 +7,7 @@ import { holdings, portfolioValue, portfolioCost, assetAllocation, fmtCurrency, 
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/portfolio")({
-  head: () => ({ meta: [{ title: "Portfolio — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Portfolio — Noventrum" }] }),
   component: PortfolioPage,
 });
 

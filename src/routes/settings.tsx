@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Settings — Noventrum" }] }),
   component: SettingsPage,
 });
 

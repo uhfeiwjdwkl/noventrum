@@ -7,7 +7,7 @@ import { goals, fmtCurrency } from "@/lib/finance/data";
 import { Target } from "lucide-react";
 
 export const Route = createFileRoute("/goals")({
-  head: () => ({ meta: [{ title: "Goals — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Goals — Noventrum" }] }),
   component: GoalsPage,
 });
 

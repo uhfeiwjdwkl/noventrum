@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { transactions, trades, dividends, holdings, monthlyCashflow, fmtCurrency } from "@/lib/finance/data";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Reports — FinFlow" }] }),
+  head: () => ({ meta: [{ title: "Reports — Noventrum" }] }),
   component: ReportsPage,
 });
 

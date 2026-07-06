@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import { Search, Download, Upload, Filter } from "lucide-react";
 
 export const Route = createFileRoute("/transactions")({
-  head: () => ({ meta: [{ title: "Transactions — FinFlow" }, { name: "description", content: "Search, filter, tag and manage every transaction." }] }),
+  head: () => ({ meta: [{ title: "Transactions — Noventrum" }, { name: "description", content: "Search, filter, tag and manage every transaction." }] }),
   component: TransactionsPage,
 });
 

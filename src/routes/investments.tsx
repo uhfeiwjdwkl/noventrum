@@ -8,7 +8,7 @@ import { holdings, portfolioCost, portfolioValue, trades, assetAllocation, fmtCu
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Line, LineChart } from "recharts";
 
 export const Route = createFileRoute("/investments")({
-  head: () => ({ meta: [{ title: "Investments — FinFlow" }, { name: "description", content: "Track holdings, performance, allocation and trades." }] }),
+  head: () => ({ meta: [{ title: "Investments — Noventrum" }, { name: "description", content: "Track holdings, performance, allocation and trades." }] }),
   component: InvestmentsPage,
 });
 
