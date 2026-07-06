@@ -27,7 +27,7 @@ export function StatCard({
         {icon && <div className="text-muted-foreground">{icon}</div>}
       </div>
       <div className="text-2xl sm:text-3xl font-semibold tracking-tight num">
-        {currency ? fmtCurrency(value, { compact: Math.abs(value) >= 100000 }) : value.toLocaleString()}
+        {currency ? fmtCurrency(value, { compact: Math.abs(value) >= 100000 }) : `${value.toFixed(1)}%`}
       </div>
       {change !== undefined && (
         <div className={cn("flex items-center gap-1 text-xs font-medium", up ? "text-success" : "text-destructive")}>
