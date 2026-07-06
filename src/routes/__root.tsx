@@ -77,14 +77,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "FinFlow — Personal Finance & Wealth" },
+      { name: "description", content: "Track net worth, budgets, income, expenses, and investments in one premium personal finance dashboard." },
+      { property: "og:title", content: "FinFlow — Personal Finance & Wealth" },
+      { property: "og:description", content: "Track net worth, budgets, income, expenses, and investments in one premium personal finance dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
