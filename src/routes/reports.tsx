@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatCard } from "@/components/finance/StatCard";
+import { EmptyState } from "@/components/finance/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { transactions, trades, dividends, holdings, monthlyCashflow, fmtCurrency } from "@/lib/finance/data";
+import { useFinance } from "@/lib/finance/store";
+import { monthlyCashflow, fmtCurrency } from "@/lib/finance/data";
+import { FileBarChart } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [{ title: "Reports — Noventrum" }] }),
@@ -12,13 +15,17 @@ export const Route = createFileRoute("/reports")({
 });
 
 function ReportsPage() {
-  const cf = monthlyCashflow();
+  const transactions = useFinance((s) => s.transactions);
+  const trades = useFinance((s) => s.trades);
+  const dividends = useFinance((s) => s.dividends);
+  const holdings = useFinance((s) => s.holdings);
+
+  const cf = monthlyCashflow(transactions);
   const totalIncome = cf.reduce((s, m) => s + m.income, 0);
   const totalExpense = cf.reduce((s, m) => s + m.expense, 0);
   const divTotal = dividends.reduce((s, d) => s + d.amount, 0);
   const interestTotal = transactions.filter((t) => t.category === "Interest").reduce((s, t) => s + t.amount, 0);
 
-  // realized gains from sells
   const realized = trades.filter((t) => t.side === "sell").reduce((s, t) => {
     const h = holdings.find((x) => x.symbol === t.symbol);
     return s + (h ? (t.price - h.avgCost) * t.shares : 0);
@@ -30,6 +37,18 @@ function ReportsPage() {
     ...trades.map((t) => ({ date: t.date, kind: "trade" as const, description: `${t.side.toUpperCase()} ${t.shares} ${t.symbol}`, amount: t.side === "buy" ? -t.shares * t.price : t.shares * t.price })),
     ...dividends.map((d) => ({ date: d.date, kind: "income" as const, description: `${d.symbol} dividend`, amount: d.amount })),
   ].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 50);
+
+  if (transactions.length === 0 && trades.length === 0 && dividends.length === 0 && holdings.length === 0) {
+    return (
+      <AppShell title="Reports" subtitle="Tax summaries, activity and financial statements.">
+        <EmptyState
+          icon={<FileBarChart className="h-6 w-6" />}
+          title="No data yet"
+          description="Log transactions or add holdings to generate reports and tax summaries."
+        />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="Reports" subtitle="Tax summaries, activity and financial statements.">

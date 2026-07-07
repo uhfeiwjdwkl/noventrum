@@ -4,7 +4,8 @@ import { StatCard } from "@/components/finance/StatCard";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { holdings, trades, dividends, fmtCurrency, fmtPct } from "@/lib/finance/data";
+import { useFinance } from "@/lib/finance/store";
+import { fmtCurrency, fmtPct } from "@/lib/finance/data";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ArrowLeft } from "lucide-react";
 
@@ -18,12 +19,16 @@ export const Route = createFileRoute("/investments/$symbol")({
 
 function HoldingPage() {
   const { symbol } = Route.useParams();
+  const holdings = useFinance((s) => s.holdings);
+  const trades = useFinance((s) => s.trades);
+  const dividends = useFinance((s) => s.dividends);
+
   const h = holdings.find((x) => x.symbol === symbol);
   if (!h) throw notFound();
   const val = h.shares * h.price;
   const cost = h.shares * h.avgCost;
   const pl = val - cost;
-  const plPct = (pl / cost) * 100;
+  const plPct = cost > 0 ? (pl / cost) * 100 : 0;
   const myTrades = trades.filter((t) => t.symbol === h.symbol);
   const myDivs = dividends.filter((d) => d.symbol === h.symbol);
   const totalDivs = myDivs.reduce((s, d) => s + d.amount, 0);
@@ -38,35 +43,37 @@ function HoldingPage() {
         <StatCard label="Current price" value={h.price} change={h.dayChangePct} hint="today" />
         <StatCard label="Position value" value={val} change={plPct} hint="all time" />
         <StatCard label="Unrealized P/L" value={pl} />
-        <StatCard label="Dividends (2y)" value={totalDivs} />
+        <StatCard label="Dividends" value={totalDivs} />
       </div>
 
-      <Card className="p-5 mb-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <div className="text-sm text-muted-foreground">Price history</div>
-            <div className="text-2xl font-semibold num mt-1">{fmtCurrency(h.price)}</div>
+      {h.history.length > 0 && (
+        <Card className="p-5 mb-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-muted-foreground">Price history</div>
+              <div className="text-2xl font-semibold num mt-1">{fmtCurrency(h.price)}</div>
+            </div>
+            <Badge variant="secondary" className={h.dayChangePct >= 0 ? "text-success bg-success/10 border-0" : "text-destructive bg-destructive/10 border-0"}>{fmtPct(h.dayChangePct)}</Badge>
           </div>
-          <Badge variant="secondary" className={h.dayChangePct >= 0 ? "text-success bg-success/10 border-0" : "text-destructive bg-destructive/10 border-0"}>{fmtPct(h.dayChangePct)}</Badge>
-        </div>
-        <div className="h-80">
-          <ResponsiveContainer>
-            <AreaChart data={h.history}>
-              <defs>
-                <linearGradient id="ph" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" />
-              <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickFormatter={(v) => fmtCurrency(v, { compact: true })} domain={["auto", "auto"]} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={(v: number) => fmtCurrency(v)} />
-              <Area type="monotone" dataKey="price" stroke="var(--chart-1)" strokeWidth={2} fill="url(#ph)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+          <div className="h-80">
+            <ResponsiveContainer>
+              <AreaChart data={h.history}>
+                <defs>
+                  <linearGradient id="ph" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" />
+                <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" tickFormatter={(v) => fmtCurrency(v, { compact: true })} domain={["auto", "auto"]} />
+                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={(v: number) => fmtCurrency(v)} />
+                <Area type="monotone" dataKey="price" stroke="var(--chart-1)" strokeWidth={2} fill="url(#ph)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-5">
