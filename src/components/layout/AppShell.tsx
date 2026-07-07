@@ -16,13 +16,13 @@ import {
   Moon,
   Sun,
   Search,
-  Plus,
   Bell,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AddMenu } from "@/components/finance/AddDialogs";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -43,7 +43,7 @@ const NAV = [
 function useTheme() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
-    const saved = localStorage.getItem("finflow-theme");
+    const saved = localStorage.getItem("noventrum-theme");
     const initial = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
     setDark(initial);
     document.documentElement.classList.toggle("dark", initial);
@@ -52,7 +52,7 @@ function useTheme() {
     setDark((d) => {
       const nd = !d;
       document.documentElement.classList.toggle("dark", nd);
-      localStorage.setItem("finflow-theme", nd ? "dark" : "light");
+      localStorage.setItem("noventrum-theme", nd ? "dark" : "light");
       return nd;
     });
   };
@@ -66,7 +66,6 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
 
   return (
     <div className="min-h-dvh flex w-full bg-background text-foreground">
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed lg:sticky top-0 left-0 z-40 h-dvh w-64 shrink-0 border-r border-sidebar-border bg-sidebar transition-transform",
@@ -74,7 +73,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         )}
       >
         <div className="flex h-16 items-center gap-2 px-5 border-b border-sidebar-border">
-          <div className="h-8 w-8 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">F</div>
+          <div className="h-8 w-8 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">N</div>
           <div className="font-semibold tracking-tight">Noventrum</div>
         </div>
         <nav className="p-3 space-y-0.5 overflow-y-auto h-[calc(100dvh-4rem)]">
@@ -105,7 +104,6 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/80 backdrop-blur px-4 sm:px-6">
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu">
@@ -125,7 +123,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
             <Button variant="ghost" size="icon" aria-label="Notifications">
               <Bell className="h-4 w-4" />
             </Button>
-            <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Add</Button>
+            <AddMenu />
           </div>
         </header>
 
