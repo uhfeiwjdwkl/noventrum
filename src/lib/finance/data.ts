@@ -1,4 +1,4 @@
-// Data layer — starts empty. Populate via the app's UI.
+// Types + pure selector helpers. All mutable state lives in `./store`.
 
 export type AccountType =
   | "checking"
@@ -22,9 +22,9 @@ export type TxnKind = "income" | "expense" | "transfer" | "trade";
 
 export interface Transaction {
   id: string;
-  date: string; // ISO
+  date: string;
   accountId: string;
-  amount: number; // positive = inflow, negative = outflow
+  amount: number;
   kind: TxnKind;
   category: string;
   merchant: string;
@@ -80,28 +80,20 @@ export interface Dividend {
   amount: number;
 }
 
-export const accounts: Account[] = [];
-export const transactions: Transaction[] = [];
-export const holdings: Holding[] = [];
-export const trades: Trade[] = [];
-export const budgets: Budget[] = [];
-export const goals: Goal[] = [];
-export const dividends: Dividend[] = [];
-
-// ---- derived metrics ----
-export function totalAssets() {
+// ---- derived metrics (pure) ----
+export function totalAssets(accounts: Account[]) {
   return accounts.filter((a) => a.balance > 0).reduce((s, a) => s + a.balance, 0);
 }
-export function totalLiabilities() {
+export function totalLiabilities(accounts: Account[]) {
   return -accounts.filter((a) => a.balance < 0).reduce((s, a) => s + a.balance, 0);
 }
-export function netWorth() {
-  return totalAssets() - totalLiabilities();
+export function netWorth(accounts: Account[]) {
+  return totalAssets(accounts) - totalLiabilities(accounts);
 }
-export function portfolioValue() {
+export function portfolioValue(holdings: Holding[]) {
   return holdings.reduce((s, h) => s + h.shares * h.price, 0);
 }
-export function portfolioCost() {
+export function portfolioCost(holdings: Holding[]) {
   return holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
 }
 
@@ -109,7 +101,7 @@ export function monthKey(d: string) {
   return d.slice(0, 7);
 }
 
-export function monthlyCashflow() {
+export function monthlyCashflow(transactions: Transaction[]) {
   const map = new Map<string, { income: number; expense: number }>();
   for (const t of transactions) {
     if (t.kind !== "income" && t.kind !== "expense") continue;
@@ -124,14 +116,27 @@ export function monthlyCashflow() {
     .map(([month, v]) => ({ month, ...v, net: v.income - v.expense }));
 }
 
-export function netWorthSeries(): { month: string; value: number }[] {
-  return [];
+export function netWorthSeries(
+  accounts: Account[],
+  transactions: Transaction[],
+): { month: string; value: number }[] {
+  const cur = netWorth(accounts);
+  const cf = monthlyCashflow(transactions);
+  if (cf.length === 0) return [];
+  // Rebuild past net worth by rolling back monthly net.
+  const series: { month: string; value: number }[] = [];
+  let v = cur;
+  for (let i = cf.length - 1; i >= 0; i--) {
+    series.unshift({ month: cf[i].month, value: Math.round(v) });
+    v -= cf[i].net;
+  }
+  return series;
 }
 
-export function spendingByCategory() {
+export function spendingByCategory(transactions: Transaction[], days = 30) {
   const map = new Map<string, number>();
   const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - 1);
+  cutoff.setDate(cutoff.getDate() - days);
   for (const t of transactions) {
     if (t.kind !== "expense") continue;
     if (new Date(t.date) < cutoff) continue;
@@ -142,7 +147,7 @@ export function spendingByCategory() {
     .sort((a, b) => b.amount - a.amount);
 }
 
-export function incomeBySource() {
+export function incomeBySource(transactions: Transaction[]) {
   const map = new Map<string, number>();
   const cutoff = new Date();
   cutoff.setFullYear(cutoff.getFullYear() - 1);
@@ -156,14 +161,14 @@ export function incomeBySource() {
     .sort((a, b) => b.amount - a.amount);
 }
 
-export function savingsRateSeries() {
-  return monthlyCashflow().map((m) => ({
+export function savingsRateSeries(transactions: Transaction[]) {
+  return monthlyCashflow(transactions).map((m) => ({
     month: m.month,
     rate: m.income > 0 ? Math.max(0, Math.round(((m.income - m.expense) / m.income) * 1000) / 10) : 0,
   }));
 }
 
-export function assetAllocation() {
+export function assetAllocation(holdings: Holding[]) {
   const map = new Map<string, number>();
   for (const h of holdings) {
     const v = h.shares * h.price;
@@ -173,6 +178,7 @@ export function assetAllocation() {
 }
 
 export function fmtCurrency(n: number, opts: { compact?: boolean } = {}) {
+  if (!isFinite(n)) return "$0";
   if (opts.compact && Math.abs(n) >= 1000) {
     const abs = Math.abs(n);
     const sign = n < 0 ? "-" : "";
@@ -182,5 +188,6 @@ export function fmtCurrency(n: number, opts: { compact?: boolean } = {}) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
 }
 export function fmtPct(n: number) {
+  if (!isFinite(n)) return "0.00%";
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
