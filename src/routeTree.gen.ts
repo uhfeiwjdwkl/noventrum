@@ -18,6 +18,7 @@ import { Route as NetWorthRouteImport } from './routes/net-worth'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as InvestmentsRouteImport } from './routes/investments'
 import { Route as IncomeRouteImport } from './routes/income'
+import { Route as GuideRouteImport } from './routes/guide'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as BudgetRouteImport } from './routes/budget'
@@ -71,6 +72,11 @@ const IncomeRoute = IncomeRouteImport.update({
   path: '/income',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideRoute = GuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoalsRoute = GoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/budget': typeof BudgetRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
+  '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/budget': typeof BudgetRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
+  '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/budget': typeof BudgetRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
+  '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/budget'
     | '/expenses'
     | '/goals'
+    | '/guide'
     | '/income'
     | '/investments'
     | '/markets'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/budget'
     | '/expenses'
     | '/goals'
+    | '/guide'
     | '/income'
     | '/investments'
     | '/markets'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/budget'
     | '/expenses'
     | '/goals'
+    | '/guide'
     | '/income'
     | '/investments'
     | '/markets'
@@ -225,6 +237,7 @@ export interface RootRouteChildren {
   BudgetRoute: typeof BudgetRoute
   ExpensesRoute: typeof ExpensesRoute
   GoalsRoute: typeof GoalsRoute
+  GuideRoute: typeof GuideRoute
   IncomeRoute: typeof IncomeRoute
   InvestmentsRoute: typeof InvestmentsRouteWithChildren
   MarketsRoute: typeof MarketsRoute
@@ -302,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IncomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/goals': {
       id: '/goals'
       path: '/goals'
@@ -372,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   BudgetRoute: BudgetRoute,
   ExpensesRoute: ExpensesRoute,
   GoalsRoute: GoalsRoute,
+  GuideRoute: GuideRoute,
   IncomeRoute: IncomeRoute,
   InvestmentsRoute: InvestmentsRouteWithChildren,
   MarketsRoute: MarketsRoute,
