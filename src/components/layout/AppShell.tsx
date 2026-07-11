@@ -85,6 +85,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { dark, toggle } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   return (
     <div className="min-h-dvh flex w-full bg-background text-foreground">
