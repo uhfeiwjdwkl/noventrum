@@ -151,6 +151,12 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
                 <span>Return to kommenszlapf.website</span>
                 <ExternalLink className="h-3.5 w-3.5 opacity-60" />
               </a>
+              <Link
+                to="/guide"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted"
+              >
+                Guide
+              </Link>
             </div>
           </div>
 
