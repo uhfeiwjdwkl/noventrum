@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
@@ -33,6 +34,11 @@ const TransactionsRoute = TransactionsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/net-worth'
     | '/portfolio'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/transactions'
     | '/auth/confirmed'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/net-worth'
     | '/portfolio'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/transactions'
     | '/auth/confirmed'
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/net-worth'
     | '/portfolio'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/transactions'
     | '/auth/confirmed'
@@ -219,6 +231,7 @@ export interface RootRouteChildren {
   NetWorthRoute: typeof NetWorthRoute
   PortfolioRoute: typeof PortfolioRoute
   ReportsRoute: typeof ReportsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
   AuthConfirmedRoute: typeof AuthConfirmedRoute
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -358,6 +378,7 @@ const rootRouteChildren: RootRouteChildren = {
   NetWorthRoute: NetWorthRoute,
   PortfolioRoute: PortfolioRoute,
   ReportsRoute: ReportsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
   AuthConfirmedRoute: AuthConfirmedRoute,
