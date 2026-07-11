@@ -62,6 +62,24 @@ function useTheme() {
   return { dark, toggle };
 }
 
+function Clock() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (!now) return <div className="hidden md:block h-9 w-[168px] rounded-md bg-muted/40" aria-hidden />;
+  const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  const date = now.toLocaleDateString([], { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+  return (
+    <div className="hidden md:flex flex-col items-end px-3 py-1 rounded-md bg-muted/40 border border-border/50 font-mono text-[11px] leading-tight">
+      <span className="text-foreground font-medium">{time}</span>
+      <span className="text-muted-foreground">{date}</span>
+    </div>
+  );
+}
+
 export function AppShell({ children, title, subtitle, actions }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { dark, toggle } = useTheme();
