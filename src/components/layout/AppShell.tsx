@@ -17,12 +17,15 @@ import {
   Sun,
   Search,
   Bell,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddMenu } from "@/components/finance/AddDialogs";
+import logoAsset from "@/assets/noventrum-logo.png.asset.json";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
