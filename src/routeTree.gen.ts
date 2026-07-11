@@ -23,6 +23,7 @@ import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestmentsSymbolRouteImport } from './routes/investments.$symbol'
+import { Route as AuthConfirmedRouteImport } from './routes/auth.confirmed'
 
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
@@ -94,6 +95,11 @@ const InvestmentsSymbolRoute = InvestmentsSymbolRouteImport.update({
   path: '/$symbol',
   getParentRoute: () => InvestmentsRoute,
 } as any)
+const AuthConfirmedRoute = AuthConfirmedRouteImport.update({
+  id: '/auth/confirmed',
+  path: '/auth/confirmed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/transactions'
+    | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/transactions'
+    | '/auth/confirmed'
     | '/investments/$symbol'
   id:
     | '__root__'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/transactions'
+    | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesById: FileRoutesById
 }
@@ -209,6 +221,7 @@ export interface RootRouteChildren {
   ReportsRoute: typeof ReportsRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
+  AuthConfirmedRoute: typeof AuthConfirmedRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvestmentsSymbolRouteImport
       parentRoute: typeof InvestmentsRoute
     }
+    '/auth/confirmed': {
+      id: '/auth/confirmed'
+      path: '/auth/confirmed'
+      fullPath: '/auth/confirmed'
+      preLoaderRoute: typeof AuthConfirmedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -340,6 +360,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportsRoute: ReportsRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
+  AuthConfirmedRoute: AuthConfirmedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
