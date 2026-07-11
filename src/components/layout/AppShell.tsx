@@ -76,8 +76,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
         )}
       >
         <div className="flex h-16 items-center gap-2 px-5 border-b border-sidebar-border">
-          <div className="h-8 w-8 rounded-lg bg-primary grid place-items-center text-primary-foreground font-bold">N</div>
-          <div className="font-semibold tracking-tight">Noventrum</div>
+          <span className="text-xs font-medium uppercase tracking-widest text-sidebar-foreground/60">Navigation</span>
         </div>
         <nav className="p-3 space-y-0.5 overflow-y-auto h-[calc(100dvh-4rem)]">
           {NAV.map((n) => {
