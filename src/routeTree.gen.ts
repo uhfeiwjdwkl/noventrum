@@ -11,18 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as InvestmentsRouteImport } from './routes/investments'
 import { Route as IncomeRouteImport } from './routes/income'
+import { Route as GuideRouteImport } from './routes/guide'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestmentsSymbolRouteImport } from './routes/investments.$symbol'
+import { Route as AuthConfirmedRouteImport } from './routes/auth.confirmed'
 
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
@@ -32,6 +35,11 @@ const TransactionsRoute = TransactionsRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -64,6 +72,11 @@ const IncomeRoute = IncomeRouteImport.update({
   path: '/income',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideRoute = GuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoalsRoute = GoalsRouteImport.update({
   id: '/goals',
   path: '/goals',
@@ -94,6 +107,11 @@ const InvestmentsSymbolRoute = InvestmentsSymbolRouteImport.update({
   path: '/$symbol',
   getParentRoute: () => InvestmentsRoute,
 } as any)
+const AuthConfirmedRoute = AuthConfirmedRouteImport.update({
+  id: '/auth/confirmed',
+  path: '/auth/confirmed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,14 +119,17 @@ export interface FileRoutesByFullPath {
   '/budget': typeof BudgetRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
+  '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
 export interface FileRoutesByTo {
@@ -117,14 +138,17 @@ export interface FileRoutesByTo {
   '/budget': typeof BudgetRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
+  '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
 export interface FileRoutesById {
@@ -134,14 +158,17 @@ export interface FileRoutesById {
   '/budget': typeof BudgetRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
+  '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
 export interface FileRouteTypes {
@@ -152,14 +179,17 @@ export interface FileRouteTypes {
     | '/budget'
     | '/expenses'
     | '/goals'
+    | '/guide'
     | '/income'
     | '/investments'
     | '/markets'
     | '/net-worth'
     | '/portfolio'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -168,14 +198,17 @@ export interface FileRouteTypes {
     | '/budget'
     | '/expenses'
     | '/goals'
+    | '/guide'
     | '/income'
     | '/investments'
     | '/markets'
     | '/net-worth'
     | '/portfolio'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/auth/confirmed'
     | '/investments/$symbol'
   id:
     | '__root__'
@@ -184,14 +217,17 @@ export interface FileRouteTypes {
     | '/budget'
     | '/expenses'
     | '/goals'
+    | '/guide'
     | '/income'
     | '/investments'
     | '/markets'
     | '/net-worth'
     | '/portfolio'
     | '/reports'
+    | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesById: FileRoutesById
 }
@@ -201,14 +237,17 @@ export interface RootRouteChildren {
   BudgetRoute: typeof BudgetRoute
   ExpensesRoute: typeof ExpensesRoute
   GoalsRoute: typeof GoalsRoute
+  GuideRoute: typeof GuideRoute
   IncomeRoute: typeof IncomeRoute
   InvestmentsRoute: typeof InvestmentsRouteWithChildren
   MarketsRoute: typeof MarketsRoute
   NetWorthRoute: typeof NetWorthRoute
   PortfolioRoute: typeof PortfolioRoute
   ReportsRoute: typeof ReportsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
+  AuthConfirmedRoute: typeof AuthConfirmedRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -225,6 +264,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -269,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IncomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/goals': {
       id: '/goals'
       path: '/goals'
@@ -311,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvestmentsSymbolRouteImport
       parentRoute: typeof InvestmentsRoute
     }
+    '/auth/confirmed': {
+      id: '/auth/confirmed'
+      path: '/auth/confirmed'
+      fullPath: '/auth/confirmed'
+      preLoaderRoute: typeof AuthConfirmedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -332,14 +392,17 @@ const rootRouteChildren: RootRouteChildren = {
   BudgetRoute: BudgetRoute,
   ExpensesRoute: ExpensesRoute,
   GoalsRoute: GoalsRoute,
+  GuideRoute: GuideRoute,
   IncomeRoute: IncomeRoute,
   InvestmentsRoute: InvestmentsRouteWithChildren,
   MarketsRoute: MarketsRoute,
   NetWorthRoute: NetWorthRoute,
   PortfolioRoute: PortfolioRoute,
   ReportsRoute: ReportsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
+  AuthConfirmedRoute: AuthConfirmedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

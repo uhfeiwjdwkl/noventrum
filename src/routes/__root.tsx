@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { hydrateFinance } from "@/lib/finance/store";
+import { KommenszlapfAuthProvider } from "@/lib/kommenszlapfAuth";
 
 function NotFoundComponent() {
   return (
@@ -123,8 +124,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster richColors position="top-right" />
+      <KommenszlapfAuthProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
+      </KommenszlapfAuthProvider>
     </QueryClientProvider>
   );
 }

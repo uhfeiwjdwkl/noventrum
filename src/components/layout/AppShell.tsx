@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddMenu } from "@/components/finance/AddDialogs";
+import { KommenszlapfAccountButton, KommenszlapfAccountDialog } from "@/components/auth/KommenszlapfAccount";
 import logoAsset from "@/assets/noventrum-logo.png.asset.json";
 
 const NAV = [
@@ -84,6 +85,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { dark, toggle } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   return (
     <div className="min-h-dvh flex w-full bg-background text-foreground">
@@ -151,6 +153,12 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
                 <span>Return to kommenszlapf.website</span>
                 <ExternalLink className="h-3.5 w-3.5 opacity-60" />
               </a>
+              <Link
+                to="/guide"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted"
+              >
+                Guide
+              </Link>
             </div>
           </div>
 
@@ -171,8 +179,10 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
               <Bell className="h-4 w-4" />
             </Button>
             <AddMenu />
+            <KommenszlapfAccountButton onOpen={() => setAccountOpen(true)} />
           </div>
         </header>
+        <KommenszlapfAccountDialog open={accountOpen} onOpenChange={setAccountOpen} />
 
         <div className="flex-1 min-w-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8 max-w-[1600px] mx-auto w-full">
