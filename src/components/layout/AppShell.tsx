@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddMenu } from "@/components/finance/AddDialogs";
 import { KommenszlapfAccountButton, KommenszlapfAccountDialog } from "@/components/auth/KommenszlapfAccount";
-import logoAsset from "@/assets/noventrum-logo.png.asset.json";
+
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -134,7 +134,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
 
           <div className="relative group flex items-center">
             <Link to="/" className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition-colors" aria-label="Noventrum home">
-              <img src={logoAsset.url} alt="Noventrum logo" className="h-8 w-8 rounded-md object-contain" />
+              <img src="/noventrum-logo.png" alt="Noventrum logo" className="h-8 w-8 rounded-md object-contain" />
               <span className="font-semibold tracking-tight text-lg">Noventrum</span>
             </Link>
             <button
