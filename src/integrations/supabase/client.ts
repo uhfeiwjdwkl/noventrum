@@ -15,7 +15,7 @@ if (typeof window !== "undefined" && window.location.hostname.endsWith("kommensz
   }
 }
 
-export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY || "public-anon-key-placeholder", {
+export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: cookieStorage as never,
     storageKey: STORAGE_KEY,
