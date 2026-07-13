@@ -15,6 +15,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PropertyRouteImport } from './routes/property'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as OtherAssetsRouteImport } from './routes/other-assets'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as InvestmentsRouteImport } from './routes/investments'
@@ -56,6 +57,11 @@ const PropertyRoute = PropertyRouteImport.update({
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtherAssetsRoute = OtherAssetsRouteImport.update({
+  id: '/other-assets',
+  path: '/other-assets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NetWorthRoute = NetWorthRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
+  '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
   '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
+  '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
   '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
+  '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
   '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
@@ -193,6 +202,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/markets'
     | '/net-worth'
+    | '/other-assets'
     | '/portfolio'
     | '/property'
     | '/reports'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/markets'
     | '/net-worth'
+    | '/other-assets'
     | '/portfolio'
     | '/property'
     | '/reports'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/markets'
     | '/net-worth'
+    | '/other-assets'
     | '/portfolio'
     | '/property'
     | '/reports'
@@ -254,6 +266,7 @@ export interface RootRouteChildren {
   InvestmentsRoute: typeof InvestmentsRouteWithChildren
   MarketsRoute: typeof MarketsRoute
   NetWorthRoute: typeof NetWorthRoute
+  OtherAssetsRoute: typeof OtherAssetsRoute
   PortfolioRoute: typeof PortfolioRoute
   PropertyRoute: typeof PropertyRoute
   ReportsRoute: typeof ReportsRoute
@@ -305,6 +318,13 @@ declare module '@tanstack/react-router' {
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/other-assets': {
+      id: '/other-assets'
+      path: '/other-assets'
+      fullPath: '/other-assets'
+      preLoaderRoute: typeof OtherAssetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/net-worth': {
@@ -417,6 +437,7 @@ const rootRouteChildren: RootRouteChildren = {
   InvestmentsRoute: InvestmentsRouteWithChildren,
   MarketsRoute: MarketsRoute,
   NetWorthRoute: NetWorthRoute,
+  OtherAssetsRoute: OtherAssetsRoute,
   PortfolioRoute: PortfolioRoute,
   PropertyRoute: PropertyRoute,
   ReportsRoute: ReportsRoute,
