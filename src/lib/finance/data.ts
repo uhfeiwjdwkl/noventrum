@@ -147,12 +147,12 @@ export function convert(
   amount: number,
   from: string | undefined,
   to: string,
-  fxRates: Record<string, number>,
+  fxRates: Record<string, number> & { __base?: string },
 ): number {
   if (!from || from === to) return amount;
   // fxRates: map from currency code -> value in base currency (`to`)
   const rateFrom = fxRates[from];
-  if (rateFrom && to === fxRates.__base) return amount * rateFrom;
+  if (typeof rateFrom === "number" && fxRates.__base === to) return amount * rateFrom;
   // fallback: rates keyed as "USDEUR" style
   const key = `${from}${to}`;
   if (fxRates[key]) return amount * fxRates[key];
