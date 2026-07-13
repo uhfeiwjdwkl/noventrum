@@ -297,20 +297,18 @@ export const useFinance = create<FinanceState>()(
             accounts = s.accounts.map((a) =>
               a.id === d.accountId ? { ...a, balance: a.balance + net } : a,
             );
-            transactions = [
-              {
-                id: uid(),
-                date: d.date,
-                accountId: d.accountId,
-                amount: net,
-                kind: "income",
-                category: "Dividend",
-                merchant: d.symbol,
-                notes: d.tax ? `dividend ${d.amount}, tax ${d.tax}` : undefined,
-                currency: d.currency,
-              },
-              ...s.transactions,
-            ].sort((a, b) => (a.date < b.date ? 1 : -1));
+            const divTxn: Transaction = {
+              id: uid(),
+              date: d.date,
+              accountId: d.accountId,
+              amount: net,
+              kind: "income",
+              category: "Dividend",
+              merchant: d.symbol,
+              notes: d.tax ? `dividend ${d.amount}, tax ${d.tax}` : undefined,
+              currency: d.currency,
+            };
+            transactions = [divTxn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
           }
           return { dividends: [div, ...s.dividends], accounts, transactions };
         });
