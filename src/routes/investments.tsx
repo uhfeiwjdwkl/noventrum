@@ -9,7 +9,8 @@ import { useFinance } from "@/lib/finance/store";
 import { portfolioCost, portfolioValue, assetAllocation, fmtCurrency, fmtPct } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { LineChart as LineIcon, Trash2, RefreshCw } from "lucide-react";
-import { AddHoldingDialog, BuySellDialog } from "@/components/finance/AddDialogs";
+import { AddHoldingDialog } from "@/components/finance/AddDialogs";
+import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { useState } from "react";
 import { toast } from "sonner";
 
