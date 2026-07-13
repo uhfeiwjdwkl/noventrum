@@ -13,6 +13,7 @@ import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PropertyRouteImport } from './routes/property'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
 import { Route as MarketsRouteImport } from './routes/markets'
@@ -45,6 +46,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PropertyRoute = PropertyRouteImport.update({
+  id: '/property',
+  path: '/property',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortfolioRoute = PortfolioRouteImport.update({
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
+  '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
+  '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/portfolio': typeof PortfolioRoute
+  '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/markets'
     | '/net-worth'
     | '/portfolio'
+    | '/property'
     | '/reports'
     | '/reset-password'
     | '/settings'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/markets'
     | '/net-worth'
     | '/portfolio'
+    | '/property'
     | '/reports'
     | '/reset-password'
     | '/settings'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/markets'
     | '/net-worth'
     | '/portfolio'
+    | '/property'
     | '/reports'
     | '/reset-password'
     | '/settings'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   MarketsRoute: typeof MarketsRoute
   NetWorthRoute: typeof NetWorthRoute
   PortfolioRoute: typeof PortfolioRoute
+  PropertyRoute: typeof PropertyRoute
   ReportsRoute: typeof ReportsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/property': {
+      id: '/property'
+      path: '/property'
+      fullPath: '/property'
+      preLoaderRoute: typeof PropertyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portfolio': {
@@ -398,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketsRoute: MarketsRoute,
   NetWorthRoute: NetWorthRoute,
   PortfolioRoute: PortfolioRoute,
+  PropertyRoute: PropertyRoute,
   ReportsRoute: ReportsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
