@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useFinance } from "@/lib/finance/store";
 import { portfolioCost, portfolioValue, assetAllocation, fmtCurrency, fmtPct } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { LineChart as LineIcon, Trash2 } from "lucide-react";
-import { AddHoldingDialog } from "@/components/finance/AddDialogs";
+import { LineChart as LineIcon, Trash2, RefreshCw } from "lucide-react";
+import { AddHoldingDialog, BuySellDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/investments")({
   head: () => ({ meta: [{ title: "Investments — Noventrum" }, { name: "description", content: "Track holdings, performance, allocation and trades." }] }),
