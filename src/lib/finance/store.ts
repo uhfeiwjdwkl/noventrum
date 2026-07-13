@@ -108,7 +108,7 @@ const empty = {
   properties: [] as Property[],
   physicalAssets: [] as PhysicalAsset[],
   incomeSources: [] as IncomeSource[],
-  fxRates: { __base: "USD", USD: 1 } as Record<string, number> & { __base?: string },
+  fxRates: Object.assign({ USD: 1 }, { __base: "USD" }) as Record<string, number> & { __base?: string },
   settings: { baseCurrency: "USD" } as Settings,
 };
 
