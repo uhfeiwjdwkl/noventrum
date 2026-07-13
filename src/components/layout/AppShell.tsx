@@ -19,6 +19,9 @@ import {
   Bell,
   RefreshCw,
   ExternalLink,
+  Home,
+  Package,
+  Coins,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";

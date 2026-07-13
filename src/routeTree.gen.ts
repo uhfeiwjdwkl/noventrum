@@ -23,6 +23,7 @@ import { Route as IncomeRouteImport } from './routes/income'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as ExpensesRouteImport } from './routes/expenses'
+import { Route as DividendsRouteImport } from './routes/dividends'
 import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
@@ -99,6 +100,11 @@ const ExpensesRoute = ExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DividendsRoute = DividendsRouteImport.update({
+  id: '/dividends',
+  path: '/dividends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BudgetRoute = BudgetRouteImport.update({
   id: '/budget',
   path: '/budget',
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
   '/budget': typeof BudgetRoute
+  '/dividends': typeof DividendsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
   '/guide': typeof GuideRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
   '/budget': typeof BudgetRoute
+  '/dividends': typeof DividendsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
   '/guide': typeof GuideRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
   '/budget': typeof BudgetRoute
+  '/dividends': typeof DividendsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
   '/guide': typeof GuideRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/budget'
+    | '/dividends'
     | '/expenses'
     | '/goals'
     | '/guide'
@@ -216,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/budget'
+    | '/dividends'
     | '/expenses'
     | '/goals'
     | '/guide'
@@ -237,6 +248,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/budget'
+    | '/dividends'
     | '/expenses'
     | '/goals'
     | '/guide'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRoute: typeof AccountsRoute
   BudgetRoute: typeof BudgetRoute
+  DividendsRoute: typeof DividendsRoute
   ExpensesRoute: typeof ExpensesRoute
   GoalsRoute: typeof GoalsRoute
   GuideRoute: typeof GuideRoute
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpensesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dividends': {
+      id: '/dividends'
+      path: '/dividends'
+      fullPath: '/dividends'
+      preLoaderRoute: typeof DividendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/budget': {
       id: '/budget'
       path: '/budget'
@@ -430,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
   BudgetRoute: BudgetRoute,
+  DividendsRoute: DividendsRoute,
   ExpensesRoute: ExpensesRoute,
   GoalsRoute: GoalsRoute,
   GuideRoute: GuideRoute,
