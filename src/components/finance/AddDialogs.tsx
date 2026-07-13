@@ -34,7 +34,13 @@ import {
   TrendingUp,
   PiggyBank,
   Target,
+  Home,
+  Package,
+  Coins,
+  Briefcase,
+  ArrowLeftRight,
 } from "lucide-react";
+import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
 import type { AccountType, TxnKind } from "@/lib/finance/data";
 import { toast } from "sonner";
