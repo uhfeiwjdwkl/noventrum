@@ -19,6 +19,9 @@ import {
   Bell,
   RefreshCw,
   ExternalLink,
+  Home,
+  Package,
+  Coins,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,9 @@ const NAV = [
   { to: "/transactions", label: "Transactions", icon: Receipt },
   { to: "/investments", label: "Investments", icon: LineChart },
   { to: "/portfolio", label: "Portfolio", icon: Briefcase },
+  { to: "/dividends", label: "Dividends", icon: Coins },
+  { to: "/property", label: "Property", icon: Home },
+  { to: "/other-assets", label: "Other Assets", icon: Package },
   { to: "/markets", label: "Markets", icon: CandlestickChart },
   { to: "/budget", label: "Budget", icon: PiggyBank },
   { to: "/accounts", label: "Accounts", icon: Wallet },

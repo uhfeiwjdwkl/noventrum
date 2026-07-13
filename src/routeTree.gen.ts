@@ -13,7 +13,9 @@ import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PropertyRouteImport } from './routes/property'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as OtherAssetsRouteImport } from './routes/other-assets'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as InvestmentsRouteImport } from './routes/investments'
@@ -21,6 +23,7 @@ import { Route as IncomeRouteImport } from './routes/income'
 import { Route as GuideRouteImport } from './routes/guide'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as ExpensesRouteImport } from './routes/expenses'
+import { Route as DividendsRouteImport } from './routes/dividends'
 import { Route as BudgetRouteImport } from './routes/budget'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
@@ -47,9 +50,19 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropertyRoute = PropertyRouteImport.update({
+  id: '/property',
+  path: '/property',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtherAssetsRoute = OtherAssetsRouteImport.update({
+  id: '/other-assets',
+  path: '/other-assets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NetWorthRoute = NetWorthRouteImport.update({
@@ -87,6 +100,11 @@ const ExpensesRoute = ExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DividendsRoute = DividendsRouteImport.update({
+  id: '/dividends',
+  path: '/dividends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BudgetRoute = BudgetRouteImport.update({
   id: '/budget',
   path: '/budget',
@@ -117,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
   '/budget': typeof BudgetRoute
+  '/dividends': typeof DividendsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
   '/guide': typeof GuideRoute
@@ -124,7 +143,9 @@ export interface FileRoutesByFullPath {
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
+  '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
+  '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -136,6 +157,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
   '/budget': typeof BudgetRoute
+  '/dividends': typeof DividendsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
   '/guide': typeof GuideRoute
@@ -143,7 +165,9 @@ export interface FileRoutesByTo {
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
+  '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
+  '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -156,6 +180,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
   '/budget': typeof BudgetRoute
+  '/dividends': typeof DividendsRoute
   '/expenses': typeof ExpensesRoute
   '/goals': typeof GoalsRoute
   '/guide': typeof GuideRoute
@@ -163,7 +188,9 @@ export interface FileRoutesById {
   '/investments': typeof InvestmentsRouteWithChildren
   '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
+  '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
+  '/property': typeof PropertyRoute
   '/reports': typeof ReportsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
@@ -177,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/budget'
+    | '/dividends'
     | '/expenses'
     | '/goals'
     | '/guide'
@@ -184,7 +212,9 @@ export interface FileRouteTypes {
     | '/investments'
     | '/markets'
     | '/net-worth'
+    | '/other-assets'
     | '/portfolio'
+    | '/property'
     | '/reports'
     | '/reset-password'
     | '/settings'
@@ -196,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/budget'
+    | '/dividends'
     | '/expenses'
     | '/goals'
     | '/guide'
@@ -203,7 +234,9 @@ export interface FileRouteTypes {
     | '/investments'
     | '/markets'
     | '/net-worth'
+    | '/other-assets'
     | '/portfolio'
+    | '/property'
     | '/reports'
     | '/reset-password'
     | '/settings'
@@ -215,6 +248,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/budget'
+    | '/dividends'
     | '/expenses'
     | '/goals'
     | '/guide'
@@ -222,7 +256,9 @@ export interface FileRouteTypes {
     | '/investments'
     | '/markets'
     | '/net-worth'
+    | '/other-assets'
     | '/portfolio'
+    | '/property'
     | '/reports'
     | '/reset-password'
     | '/settings'
@@ -235,6 +271,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRoute: typeof AccountsRoute
   BudgetRoute: typeof BudgetRoute
+  DividendsRoute: typeof DividendsRoute
   ExpensesRoute: typeof ExpensesRoute
   GoalsRoute: typeof GoalsRoute
   GuideRoute: typeof GuideRoute
@@ -242,7 +279,9 @@ export interface RootRouteChildren {
   InvestmentsRoute: typeof InvestmentsRouteWithChildren
   MarketsRoute: typeof MarketsRoute
   NetWorthRoute: typeof NetWorthRoute
+  OtherAssetsRoute: typeof OtherAssetsRoute
   PortfolioRoute: typeof PortfolioRoute
+  PropertyRoute: typeof PropertyRoute
   ReportsRoute: typeof ReportsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
@@ -280,11 +319,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/property': {
+      id: '/property'
+      path: '/property'
+      fullPath: '/property'
+      preLoaderRoute: typeof PropertyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portfolio': {
       id: '/portfolio'
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/other-assets': {
+      id: '/other-assets'
+      path: '/other-assets'
+      fullPath: '/other-assets'
+      preLoaderRoute: typeof OtherAssetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/net-worth': {
@@ -334,6 +387,13 @@ declare module '@tanstack/react-router' {
       path: '/expenses'
       fullPath: '/expenses'
       preLoaderRoute: typeof ExpensesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dividends': {
+      id: '/dividends'
+      path: '/dividends'
+      fullPath: '/dividends'
+      preLoaderRoute: typeof DividendsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/budget': {
@@ -390,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
   BudgetRoute: BudgetRoute,
+  DividendsRoute: DividendsRoute,
   ExpensesRoute: ExpensesRoute,
   GoalsRoute: GoalsRoute,
   GuideRoute: GuideRoute,
@@ -397,7 +458,9 @@ const rootRouteChildren: RootRouteChildren = {
   InvestmentsRoute: InvestmentsRouteWithChildren,
   MarketsRoute: MarketsRoute,
   NetWorthRoute: NetWorthRoute,
+  OtherAssetsRoute: OtherAssetsRoute,
   PortfolioRoute: PortfolioRoute,
+  PropertyRoute: PropertyRoute,
   ReportsRoute: ReportsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,

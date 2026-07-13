@@ -8,9 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useFinance } from "@/lib/finance/store";
 import { portfolioCost, portfolioValue, assetAllocation, fmtCurrency, fmtPct } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { LineChart as LineIcon, Trash2 } from "lucide-react";
+import { LineChart as LineIcon, Trash2, RefreshCw } from "lucide-react";
 import { AddHoldingDialog } from "@/components/finance/AddDialogs";
+import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/investments")({
   head: () => ({ meta: [{ title: "Investments — Noventrum" }, { name: "description", content: "Track holdings, performance, allocation and trades." }] }),
@@ -22,7 +24,18 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--cha
 function InvestmentsPage() {
   const holdings = useFinance((s) => s.holdings);
   const deleteHolding = useFinance((s) => s.deleteHolding);
+  const refreshPrices = useFinance((s) => s.refreshPrices);
   const [addOpen, setAddOpen] = useState(false);
+  const [tradeOpen, setTradeOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function doRefresh() {
+    setRefreshing(true);
+    const r = await refreshPrices();
+    setRefreshing(false);
+    if (r.updated) toast.success(`Updated ${r.updated} quote${r.updated === 1 ? "" : "s"}`);
+    else toast.error("Live quotes failed");
+  }
 
   const pv = portfolioValue(holdings);
   const pc = portfolioCost(holdings);
@@ -34,7 +47,16 @@ function InvestmentsPage() {
     <AppShell
       title="Investments"
       subtitle="Your portfolio at a glance."
-      actions={<AddHoldingDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add holding</Button>} />}
+      actions={
+        <>
+          <Button size="sm" variant="outline" onClick={doRefresh} disabled={refreshing || holdings.length === 0} className="gap-1.5">
+            <RefreshCw className={"h-4 w-4 " + (refreshing ? "animate-spin" : "")} />
+            {refreshing ? "Syncing" : "Refresh prices"}
+          </Button>
+          <BuySellDialog open={tradeOpen} onOpenChange={setTradeOpen} trigger={<Button size="sm" variant="secondary">Buy / Sell</Button>} />
+          <AddHoldingDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add holding</Button>} />
+        </>
+      }
     >
       {holdings.length === 0 ? (
         <EmptyState

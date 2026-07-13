@@ -34,7 +34,13 @@ import {
   TrendingUp,
   PiggyBank,
   Target,
+  Home,
+  Package,
+  Coins,
+  Briefcase,
+  ArrowLeftRight,
 } from "lucide-react";
+import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
 import type { AccountType, TxnKind } from "@/lib/finance/data";
 import { toast } from "sonner";
@@ -435,7 +441,7 @@ export function AddGoalDialog({
 
 /* ------------------------------- AddMenu ------------------------------- */
 
-type MenuKind = "account" | "transaction" | "holding" | "budget" | "goal";
+type MenuKind = "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
 
 export function AddMenu() {
   const [open, setOpen] = useState<MenuKind | null>(null);
@@ -445,21 +451,33 @@ export function AddMenu() {
         <DropdownMenuTrigger asChild>
           <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />Add</Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuLabel>Add new</DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-60">
+          <DropdownMenuLabel>Log a transaction</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => setOpen("transaction")}><Receipt className="h-4 w-4 mr-2" />Income / Expense</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("trade")}><ArrowLeftRight className="h-4 w-4 mr-2" />Buy / Sell asset</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("dividend")}><Coins className="h-4 w-4 mr-2" />Dividend</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setOpen("transaction")}><Receipt className="h-4 w-4 mr-2" />Transaction</DropdownMenuItem>
+          <DropdownMenuLabel>Set up</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setOpen("account")}><Wallet className="h-4 w-4 mr-2" />Account</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpen("holding")}><TrendingUp className="h-4 w-4 mr-2" />Holding</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("income-source")}><Briefcase className="h-4 w-4 mr-2" />Income source</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("property")}><Home className="h-4 w-4 mr-2" />Property</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("physical")}><Package className="h-4 w-4 mr-2" />Physical asset</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("budget")}><PiggyBank className="h-4 w-4 mr-2" />Budget</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("goal")}><Target className="h-4 w-4 mr-2" />Goal</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <AddAccountDialog open={open === "account"} onOpenChange={(o) => setOpen(o ? "account" : null)} />
       <AddTransactionDialog open={open === "transaction"} onOpenChange={(o) => setOpen(o ? "transaction" : null)} />
-      <AddHoldingDialog open={open === "holding"} onOpenChange={(o) => setOpen(o ? "holding" : null)} />
+      <BuySellDialog open={open === "trade"} onOpenChange={(o) => setOpen(o ? "trade" : null)} />
+      <AddDividendDialog open={open === "dividend"} onOpenChange={(o) => setOpen(o ? "dividend" : null)} />
+      <AddPropertyDialog open={open === "property"} onOpenChange={(o) => setOpen(o ? "property" : null)} />
+      <AddPhysicalDialog open={open === "physical"} onOpenChange={(o) => setOpen(o ? "physical" : null)} />
+      <AddIncomeSourceDialog open={open === "income-source"} onOpenChange={(o) => setOpen(o ? "income-source" : null)} />
       <AddBudgetDialog open={open === "budget"} onOpenChange={(o) => setOpen(o ? "budget" : null)} />
       <AddGoalDialog open={open === "goal"} onOpenChange={(o) => setOpen(o ? "goal" : null)} />
     </>
   );
 }
+
+/* Kept for backward-compat; TrendingUp icon reference. */
+void TrendingUp;

@@ -31,18 +31,23 @@ export interface Transaction {
   notes?: string;
   tags?: string[];
   recurring?: boolean;
+  currency?: string;
 }
+
+export type AssetClass = "stock" | "etf" | "commodity" | "cash" | "crypto" | "other";
 
 export interface Holding {
   id: string;
   symbol: string;
   name: string;
-  assetClass: "stock" | "etf" | "commodity" | "cash" | "crypto" | "other";
+  assetClass: AssetClass;
   shares: number;
   avgCost: number;
   price: number;
   dayChangePct: number;
   sector?: string;
+  currency?: string;
+  priceUpdatedAt?: string;
   history: { date: string; price: number }[];
 }
 
@@ -54,7 +59,9 @@ export interface Trade {
   shares: number;
   price: number;
   fees: number;
+  tax?: number;
   accountId: string;
+  currency?: string;
 }
 
 export interface Budget {
@@ -78,9 +85,80 @@ export interface Dividend {
   date: string;
   symbol: string;
   amount: number;
+  accountId?: string;
+  currency?: string;
+  tax?: number;
+}
+
+/** Real estate. Valuation history for back-calculated net-worth. */
+export interface Property {
+  id: string;
+  name: string;
+  address?: string;
+  purchaseDate: string;
+  purchasePrice: number;
+  fees: number;
+  tax: number;
+  currentValue: number;
+  currency: string;
+  linkedMortgageAccountId?: string;
+  soldDate?: string;
+  soldPrice?: number;
+  valuations: { date: string; value: number }[];
+  notes?: string;
+}
+
+/** Physical assets: vehicles, collectibles, jewelry, etc. */
+export interface PhysicalAsset {
+  id: string;
+  name: string;
+  category: string; // e.g. Vehicle, Jewelry, Art
+  purchaseDate: string;
+  purchasePrice: number;
+  fees: number;
+  tax: number;
+  currentValue: number;
+  currency: string;
+  soldDate?: string;
+  soldPrice?: number;
+  notes?: string;
+}
+
+export interface IncomeSource {
+  id: string;
+  name: string;
+  kind: "salary" | "rental" | "side" | "dividend" | "interest" | "other";
+  monthly: number;
+  currency: string;
+  active: boolean;
+}
+
+/** Cached historical prices for one symbol, indexed by ISO date. */
+export interface PriceSeries {
+  symbol: string;
+  currency?: string;
+  updatedAt: string;
+  points: { date: string; close: number }[];
 }
 
 // ---- derived metrics (pure) ----
+
+export function convert(
+  amount: number,
+  from: string | undefined,
+  to: string,
+  fxRates: Record<string, number> & { __base?: string },
+): number {
+  if (!from || from === to) return amount;
+  // fxRates: map from currency code -> value in base currency (`to`)
+  const rateFrom = fxRates[from];
+  if (typeof rateFrom === "number" && fxRates.__base === to) return amount * rateFrom;
+  // fallback: rates keyed as "USDEUR" style
+  const key = `${from}${to}`;
+  if (fxRates[key]) return amount * fxRates[key];
+  return amount;
+}
+
 export function totalAssets(accounts: Account[]) {
   return accounts.filter((a) => a.balance > 0).reduce((s, a) => s + a.balance, 0);
 }
@@ -95,6 +173,31 @@ export function portfolioValue(holdings: Holding[]) {
 }
 export function portfolioCost(holdings: Holding[]) {
   return holdings.reduce((s, h) => s + h.shares * h.avgCost, 0);
+}
+export function propertyValue(properties: Property[]) {
+  return properties
+    .filter((p) => !p.soldDate)
+    .reduce((s, p) => s + p.currentValue, 0);
+}
+export function physicalValue(assets: PhysicalAsset[]) {
+  return assets
+    .filter((a) => !a.soldDate)
+    .reduce((s, a) => s + a.currentValue, 0);
+}
+
+/** Total net worth including holdings, real estate and physical assets. */
+export function totalNetWorth(
+  accounts: Account[],
+  holdings: Holding[],
+  properties: Property[],
+  physical: PhysicalAsset[],
+) {
+  return (
+    netWorth(accounts) +
+    portfolioValue(holdings) +
+    propertyValue(properties) +
+    physicalValue(physical)
+  );
 }
 
 export function monthKey(d: string) {
@@ -116,20 +219,63 @@ export function monthlyCashflow(transactions: Transaction[]) {
     .map(([month, v]) => ({ month, ...v, net: v.income - v.expense }));
 }
 
+/**
+ * Back-calculate net-worth month by month from transactions + holdings
+ * historical prices + property/physical valuations. No manual snapshots.
+ */
 export function netWorthSeries(
   accounts: Account[],
   transactions: Transaction[],
+  holdings: Holding[] = [],
+  properties: Property[] = [],
+  physical: PhysicalAsset[] = [],
 ): { month: string; value: number }[] {
-  const cur = netWorth(accounts);
+  const now = totalNetWorth(accounts, holdings, properties, physical);
   const cf = monthlyCashflow(transactions);
   if (cf.length === 0) return [];
-  // Rebuild past net worth by rolling back monthly net.
+
+  // For each month, use holdings' historical close for that month if available,
+  // else the current price. For properties/physical, use closest valuation.
+  const monthPortfolio = (month: string) => {
+    let total = 0;
+    for (const h of holdings) {
+      const pt = [...h.history].reverse().find((p) => p.date.slice(0, 7) <= month);
+      const price = pt?.price ?? h.price;
+      total += h.shares * price;
+    }
+    return total;
+  };
+  const monthProperty = (month: string) => {
+    let total = 0;
+    for (const p of properties) {
+      if (p.purchaseDate.slice(0, 7) > month) continue;
+      if (p.soldDate && p.soldDate.slice(0, 7) < month) continue;
+      const v = [...p.valuations].reverse().find((x) => x.date.slice(0, 7) <= month);
+      total += v?.value ?? p.currentValue;
+    }
+    return total;
+  };
+  const monthPhysical = (month: string) => {
+    let total = 0;
+    for (const a of physical) {
+      if (a.purchaseDate.slice(0, 7) > month) continue;
+      if (a.soldDate && a.soldDate.slice(0, 7) < month) continue;
+      total += a.currentValue;
+    }
+    return total;
+  };
+
+  const currentAccountsPortion = netWorth(accounts);
   const series: { month: string; value: number }[] = [];
-  let v = cur;
+  let cash = currentAccountsPortion;
   for (let i = cf.length - 1; i >= 0; i--) {
-    series.unshift({ month: cf[i].month, value: Math.round(v) });
-    v -= cf[i].net;
+    const m = cf[i].month;
+    const val = cash + monthPortfolio(m) + monthProperty(m) + monthPhysical(m);
+    series.unshift({ month: m, value: Math.round(val) });
+    cash -= cf[i].net;
   }
+  // sanity: replace last point with current computed
+  if (series.length) series[series.length - 1] = { month: series[series.length - 1].month, value: Math.round(now) };
   return series;
 }
 
@@ -145,6 +291,22 @@ export function spendingByCategory(transactions: Transaction[], days = 30) {
   return Array.from(map.entries())
     .map(([category, amount]) => ({ category, amount: Math.round(amount * 100) / 100 }))
     .sort((a, b) => b.amount - a.amount);
+}
+
+const SIDE_CATEGORIES = new Set([
+  "side",
+  "side income",
+  "rental",
+  "rent",
+  "freelance",
+  "hobby",
+  "gig",
+  "consulting",
+  "royalty",
+]);
+
+export function isSideIncome(category: string) {
+  return SIDE_CATEGORIES.has(category.toLowerCase());
 }
 
 export function incomeBySource(transactions: Transaction[]) {
@@ -168,24 +330,37 @@ export function savingsRateSeries(transactions: Transaction[]) {
   }));
 }
 
-export function assetAllocation(holdings: Holding[]) {
+export function assetAllocation(
+  holdings: Holding[],
+  properties: Property[] = [],
+  physical: PhysicalAsset[] = [],
+) {
   const map = new Map<string, number>();
   for (const h of holdings) {
     const v = h.shares * h.price;
     map.set(h.assetClass, (map.get(h.assetClass) ?? 0) + v);
   }
+  const pv = propertyValue(properties);
+  if (pv > 0) map.set("property", pv);
+  const ph = physicalValue(physical);
+  if (ph > 0) map.set("physical", ph);
   return Array.from(map.entries()).map(([k, v]) => ({ name: k, value: Math.round(v) }));
 }
 
-export function fmtCurrency(n: number, opts: { compact?: boolean } = {}) {
-  if (!isFinite(n)) return "$0";
+export function fmtCurrency(
+  n: number,
+  opts: { compact?: boolean; currency?: string } = {},
+) {
+  const currency = opts.currency ?? "USD";
+  if (!isFinite(n)) return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(0);
   if (opts.compact && Math.abs(n) >= 1000) {
     const abs = Math.abs(n);
     const sign = n < 0 ? "-" : "";
-    if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
-    if (abs >= 1_000) return `${sign}$${(abs / 1_000).toFixed(1)}K`;
+    const sym = new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).formatToParts(0).find((p) => p.type === "currency")?.value ?? "$";
+    if (abs >= 1_000_000) return `${sign}${sym}${(abs / 1_000_000).toFixed(1)}M`;
+    if (abs >= 1_000) return `${sign}${sym}${(abs / 1_000).toFixed(1)}K`;
   }
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(n);
 }
 export function fmtPct(n: number) {
   if (!isFinite(n)) return "0.00%";
