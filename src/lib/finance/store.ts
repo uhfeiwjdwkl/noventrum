@@ -36,6 +36,8 @@ export interface FinanceState {
   physicalAssets: PhysicalAsset[];
   incomeSources: IncomeSource[];
   fxRates: Record<string, number> & { __base?: string };
+  /** per-symbol display info kept alongside the ledger */
+  assetMeta: Record<string, SymbolMeta>;
   settings: Settings;
 
   addAccount: (a: Omit<Account, "id">) => Account;
