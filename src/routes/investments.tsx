@@ -144,8 +144,63 @@ function InvestmentsPage() {
               </div>
             </Card>
           </div>
+
+          <Card className="p-5">
+            <div className="mb-1 font-semibold">Trade ledger</div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Every position is calculated from these entries — edit or backdate any of them and holdings, cost basis and past net worth re-sync.
+            </p>
+            {sortedTrades.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No trades logged yet.</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead><TableHead>Asset</TableHead><TableHead>Side</TableHead>
+                    <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Fees / Tax</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Account</TableHead><TableHead />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedTrades.map((t) => {
+                    const extra = (t.fees || 0) + (t.tax ?? 0);
+                    const total = t.side === "buy" ? t.shares * t.price + extra : t.shares * t.price - extra;
+                    return (
+                      <TableRow key={t.id} className="group">
+                        <TableCell className="num text-muted-foreground">{t.date}</TableCell>
+                        <TableCell className="font-medium">{t.symbol}</TableCell>
+                        <TableCell>
+                          <Badge variant={t.side === "buy" ? "secondary" : "outline"} className="capitalize">{t.side}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right num">{t.shares}</TableCell>
+                        <TableCell className="text-right num">{fmtCurrency(t.price, { currency: t.currency })}</TableCell>
+                        <TableCell className="text-right num text-muted-foreground">{extra ? fmtCurrency(extra, { currency: t.currency }) : "—"}</TableCell>
+                        <TableCell className="text-right num font-medium">{fmtCurrency(total, { currency: t.currency })}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{accounts.find((a) => a.id === t.accountId)?.name ?? "—"}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <button onClick={() => setEditing(t)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary mr-2" aria-label="Edit trade"><Pencil className="h-4 w-4" /></button>
+                          <button onClick={() => { deleteTrade(t.id); toast.success("Trade removed"); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" aria-label="Delete trade"><Trash2 className="h-4 w-4" /></button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </Card>
         </>
       )}
+      {editing && (
+        <BuySellDialog
+          key={editing.id}
+          editTrade={editing}
+          open
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
+      )}
+
     </AppShell>
   );
 }
