@@ -19,10 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw } from "lucide-react";
 import { useFinance } from "@/lib/finance/store";
-import type { AssetClass } from "@/lib/finance/data";
+import type { AssetClass, Trade } from "@/lib/finance/data";
 import { getQuote } from "@/lib/prices.functions";
+import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { toast } from "sonner";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -35,49 +35,37 @@ export function BuySellDialog({
   open,
   onOpenChange,
   defaultSide,
+  editTrade,
 }: {
   trigger?: ReactNode;
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
   defaultSide?: "buy" | "sell";
+  /** when supplied the dialog edits this logged trade instead of adding one */
+  editTrade?: Trade;
 }) {
   const [internal, setInternal] = useState(false);
   const isOpen = open ?? internal;
   const setOpen = onOpenChange ?? setInternal;
   const accounts = useFinance((s) => s.accounts);
   const recordTrade = useFinance((s) => s.recordTrade);
+  const updateTrade = useFinance((s) => s.updateTrade);
   const refreshHistory = useFinance((s) => s.refreshHistory);
 
   const brokerage = accounts.filter((a) => a.type === "brokerage" || a.type === "cash");
 
-  const [symbol, setSymbol] = useState("");
-  const [name, setName] = useState("");
-  const [assetClass, setAssetClass] = useState<AssetClass>("stock");
-  const [side, setSide] = useState<"buy" | "sell">(defaultSide ?? "buy");
-  const [shares, setShares] = useState("");
-  const [price, setPrice] = useState("");
-  const [fees, setFees] = useState("");
-  const [tax, setTax] = useState("");
-  const [date, setDate] = useState(today());
-  const [accountId, setAccountId] = useState<string>("");
-  const [currency, setCurrency] = useState("USD");
+  const [symbol, setSymbol] = useState(editTrade?.symbol ?? "");
+  const [name, setName] = useState(editTrade?.name ?? "");
+  const [assetClass, setAssetClass] = useState<AssetClass>(editTrade?.assetClass ?? "stock");
+  const [side, setSide] = useState<"buy" | "sell">(editTrade?.side ?? defaultSide ?? "buy");
+  const [shares, setShares] = useState(editTrade ? String(editTrade.shares) : "");
+  const [price, setPrice] = useState(editTrade ? String(editTrade.price) : "");
+  const [fees, setFees] = useState(editTrade?.fees ? String(editTrade.fees) : "");
+  const [tax, setTax] = useState(editTrade?.tax ? String(editTrade.tax) : "");
+  const [date, setDate] = useState(editTrade?.date ?? today());
+  const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
+  const [currency, setCurrency] = useState(editTrade?.currency ?? "USD");
   const [loading, setLoading] = useState(false);
-
-  async function lookup() {
-    if (!symbol.trim()) return;
-    setLoading(true);
-    try {
-      const q = await getQuote({ data: { symbol: symbol.trim().toUpperCase() } });
-      setName(q.name);
-      setPrice(String(q.price.toFixed(2)));
-      setCurrency(q.currency);
-      toast.success(`Fetched ${q.symbol} @ ${q.price.toFixed(2)} ${q.currency}`);
-    } catch (e: unknown) {
-      toast.error("Live quote failed", { description: e instanceof Error ? e.message : "unknown" });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,6 +75,16 @@ export function BuySellDialog({
       return;
     }
     const sym = symbol.trim().toUpperCase();
+    if (editTrade) {
+      updateTrade(editTrade.id, {
+        date, symbol: sym, name: name || sym, assetClass, side,
+        shares: Number(shares), price: Number(price),
+        fees: Number(fees) || 0, tax: Number(tax) || 0, accountId, currency,
+      });
+      toast.success("Trade updated");
+      setOpen(false);
+      return;
+    }
     recordTrade({
       date,
       symbol: sym,
@@ -100,7 +98,7 @@ export function BuySellDialog({
       accountId,
       currency,
     });
-    // fetch a history line for back-calculated net worth
+    // cache historical closes so past net worth can be back-calculated
     void refreshHistory(sym);
     toast.success(`${side === "buy" ? "Bought" : "Sold"} ${shares} ${sym}`);
     setSymbol(""); setName(""); setShares(""); setPrice(""); setFees(""); setTax("");
@@ -112,20 +110,44 @@ export function BuySellDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Buy or sell an asset</DialogTitle>
-          <DialogDescription>Stocks, ETFs, crypto and commodities. Fees and tax are folded into your cost basis.</DialogDescription>
+          <DialogTitle>{editTrade ? "Edit trade" : "Buy or sell an asset"}</DialogTitle>
+          <DialogDescription>Search any stock, ETF, crypto or commodity — prices come from live market data. Backdate freely; holdings and past net worth are recalculated from the ledger.</DialogDescription>
         </DialogHeader>
+
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-2">
-              <Label>Symbol / Ticker</Label>
-              <div className="flex gap-2 mt-1.5">
-                <Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL, BTC-USD, VUSA.L" required autoFocus />
-                <Button type="button" variant="outline" size="icon" onClick={lookup} disabled={loading} title="Fetch live quote">
-                  <RefreshCw className={"h-4 w-4 " + (loading ? "animate-spin" : "")} />
-                </Button>
+              <Label>Asset</Label>
+              <div className="mt-1.5">
+                <SymbolSearch
+                  value={symbol}
+                  onChange={setSymbol}
+                  autoFocus
+                  onSelect={async (m) => {
+                    setName(m.name);
+                    const t = m.type.toLowerCase();
+                    setAssetClass(
+                      t.includes("etf") ? "etf"
+                        : t.includes("crypto") ? "crypto"
+                        : t.includes("future") || t.includes("commodity") ? "commodity"
+                        : t.includes("equity") || t.includes("stock") ? "stock"
+                        : "other",
+                    );
+                    setLoading(true);
+                    try {
+                      const q = await getQuote({ data: { symbol: m.symbol } });
+                      setPrice(q.price.toFixed(2));
+                      setCurrency(q.currency);
+                    } catch {
+                      /* keep manual entry */
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                />
               </div>
             </div>
+
             <div>
               <Label>Side</Label>
               <Select value={side} onValueChange={(v) => setSide(v as "buy" | "sell")}>

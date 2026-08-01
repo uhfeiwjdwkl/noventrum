@@ -12,12 +12,38 @@ import type {
   PhysicalAsset,
   IncomeSource,
 } from "./data";
+import { deriveHoldings, type SymbolMeta } from "./data";
 import { getQuotes, getHistory, getFxRates } from "@/lib/prices.functions";
 
 const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
+/** Cash movement a trade causes on its settlement account. */
+function tradeCash(t: Trade) {
+  const extra = (t.fees || 0) + (t.tax ?? 0);
+  return t.side === "buy" ? -(t.shares * t.price + extra) : t.shares * t.price - extra;
+}
+
+/** The cash transaction mirroring a trade. */
+function tradeTxn(t: Trade, cashDelta: number): Transaction {
+  return {
+    id: uid(),
+    date: t.date,
+    accountId: t.accountId,
+    amount: cashDelta,
+    kind: "trade",
+    category: t.side === "buy" ? "Buy" : "Sell",
+    merchant: t.symbol,
+    notes:
+      `${t.side.toUpperCase()} ${t.shares} @ ${t.price}` +
+      (t.fees ? ` fees ${t.fees}` : "") +
+      (t.tax ? ` tax ${t.tax}` : ""),
+    currency: t.currency,
+    tradeId: t.id,
+  };
+}
+
 
 export interface Settings {
   baseCurrency: string;
@@ -35,6 +61,8 @@ export interface FinanceState {
   physicalAssets: PhysicalAsset[];
   incomeSources: IncomeSource[];
   fxRates: Record<string, number> & { __base?: string };
+  /** per-symbol display info kept alongside the ledger */
+  assetMeta: Record<string, SymbolMeta>;
   settings: Settings;
 
   addAccount: (a: Omit<Account, "id">) => Account;
@@ -44,12 +72,13 @@ export interface FinanceState {
   addTransaction: (t: Omit<Transaction, "id">) => Transaction;
   deleteTransaction: (id: string) => void;
 
-  addHolding: (h: Omit<Holding, "id" | "history">) => Holding;
+  /** Deprecated manual entry — recorded as an opening buy trade. */
+  addHolding: (h: Omit<Holding, "id" | "history"> & { accountId?: string; date?: string }) => void;
   updateHolding: (id: string, patch: Partial<Holding>) => void;
   deleteHolding: (id: string) => void;
 
-  /** Buy/sell any tradable asset. Updates the Holding, records the Trade,
-   *  and posts a Transaction against the linked brokerage account. */
+  /** Buy/sell any tradable asset. The trade ledger is the source of truth —
+   *  holdings, cost basis and realized P/L are recomputed from it. */
   recordTrade: (t: {
     date: string;
     symbol: string;
@@ -62,7 +91,11 @@ export interface FinanceState {
     tax?: number;
     accountId: string;
     currency?: string;
+    notes?: string;
   }) => void;
+  updateTrade: (id: string, patch: Partial<Omit<Trade, "id">>) => void;
+  deleteTrade: (id: string) => void;
+
 
   addBudget: (b: Omit<Budget, "id" | "spent"> & { spent?: number }) => Budget;
   deleteBudget: (id: string) => void;
@@ -91,6 +124,7 @@ export interface FinanceState {
 
   refreshPrices: () => Promise<{ updated: number; failed: number }>;
   refreshHistory: (symbol: string) => Promise<number>;
+  refreshAllHistory: () => Promise<number>;
   refreshFx: () => Promise<number>;
   setBaseCurrency: (c: string) => void;
 
@@ -109,6 +143,7 @@ const empty = {
   physicalAssets: [] as PhysicalAsset[],
   incomeSources: [] as IncomeSource[],
   fxRates: { USD: 1, __base: "USD" as string } as unknown as Record<string, number> & { __base?: string },
+  assetMeta: {} as Record<string, SymbolMeta>,
   settings: { baseCurrency: "USD" } as Settings,
 };
 
@@ -170,101 +205,137 @@ export const useFinance = create<FinanceState>()(
           };
         }),
       addHolding: (h) => {
-        const holding: Holding = { ...h, id: uid(), history: [] };
-        set((s) => ({ holdings: [...s.holdings, holding] }));
-        return holding;
+        const account =
+          h.accountId ||
+          get().accounts.find((a) => a.type === "brokerage" || a.type === "cash")?.id ||
+          "";
+        get().recordTrade({
+          date: h.date ?? new Date().toISOString().slice(0, 10),
+          symbol: h.symbol,
+          name: h.name,
+          assetClass: h.assetClass,
+          side: "buy",
+          shares: h.shares,
+          price: h.avgCost || h.price,
+          fees: 0,
+          accountId: account,
+          currency: h.currency,
+          notes: "opening position",
+        });
       },
       updateHolding: (id, patch) =>
         set((s) => ({
           holdings: s.holdings.map((h) => (h.id === id ? { ...h, ...patch } : h)),
         })),
+      /** Removes the position and every trade behind it. */
       deleteHolding: (id) =>
-        set((s) => ({ holdings: s.holdings.filter((h) => h.id !== id) })),
+        set((s) => {
+          const h = s.holdings.find((x) => x.id === id);
+          if (!h) return {};
+          const doomed = s.trades.filter((t) => t.symbol === h.symbol);
+          const ids = new Set(doomed.map((t) => t.id));
+          const accounts = s.accounts.map((a) => {
+            const delta = s.transactions
+              .filter((t) => t.tradeId && ids.has(t.tradeId) && t.accountId === a.id)
+              .reduce((sum, t) => sum + t.amount, 0);
+            return delta ? { ...a, balance: a.balance - delta } : a;
+          });
+          const trades = s.trades.filter((t) => !ids.has(t.id));
+          return {
+            trades,
+            accounts,
+            transactions: s.transactions.filter((t) => !(t.tradeId && ids.has(t.tradeId))),
+            holdings: deriveHoldings(trades, s.holdings, s.assetMeta).filter((x) => x.symbol !== h.symbol),
+          };
+        }),
 
       recordTrade: (t) => {
         const sym = t.symbol.toUpperCase();
+        const trade: Trade = {
+          id: uid(),
+          date: t.date,
+          symbol: sym,
+          side: t.side,
+          shares: t.shares,
+          price: t.price,
+          fees: t.fees || 0,
+          tax: t.tax,
+          accountId: t.accountId,
+          currency: t.currency,
+          name: t.name,
+          assetClass: t.assetClass,
+          notes: t.notes,
+        };
         set((s) => {
-          // update or create holding
-          const existing = s.holdings.find((h) => h.symbol === sym);
-          let holdings: Holding[];
-          if (existing) {
-            if (t.side === "buy") {
-              const newShares = existing.shares + t.shares;
-              const newCost =
-                (existing.shares * existing.avgCost + t.shares * t.price + t.fees + (t.tax ?? 0)) /
-                (newShares || 1);
-              holdings = s.holdings.map((h) =>
-                h.id === existing.id ? { ...h, shares: newShares, avgCost: newCost, price: t.price } : h,
-              );
-            } else {
-              const newShares = Math.max(0, existing.shares - t.shares);
-              holdings = s.holdings.map((h) =>
-                h.id === existing.id ? { ...h, shares: newShares, price: t.price } : h,
-              );
-            }
-          } else if (t.side === "buy") {
-            holdings = [
-              ...s.holdings,
-              {
-                id: uid(),
-                symbol: sym,
-                name: t.name ?? sym,
-                assetClass: t.assetClass ?? "stock",
-                shares: t.shares,
-                avgCost: (t.shares * t.price + t.fees + (t.tax ?? 0)) / (t.shares || 1),
-                price: t.price,
-                dayChangePct: 0,
-                currency: t.currency,
-                history: [],
-              },
-            ];
-          } else {
-            holdings = s.holdings;
-          }
-
-          // record the trade
-          const trade: Trade = {
-            id: uid(),
-            date: t.date,
-            symbol: sym,
-            side: t.side,
-            shares: t.shares,
-            price: t.price,
-            fees: t.fees,
-            tax: t.tax,
-            accountId: t.accountId,
-            currency: t.currency,
+          const assetMeta: Record<string, SymbolMeta> = {
+            ...s.assetMeta,
+            [sym]: {
+              ...s.assetMeta[sym],
+              name: t.name || s.assetMeta[sym]?.name,
+              assetClass: t.assetClass ?? s.assetMeta[sym]?.assetClass,
+              currency: t.currency ?? s.assetMeta[sym]?.currency,
+            },
           };
-
-          // post as transaction against the brokerage account
-          const cashDelta =
-            t.side === "buy"
-              ? -(t.shares * t.price + t.fees + (t.tax ?? 0))
-              : t.shares * t.price - t.fees - (t.tax ?? 0);
-          const txn: Transaction = {
-            id: uid(),
-            date: t.date,
-            accountId: t.accountId,
-            amount: cashDelta,
-            kind: "trade",
-            category: t.side === "buy" ? "Buy" : "Sell",
-            merchant: sym,
-            notes: `${t.side.toUpperCase()} ${t.shares} @ ${t.price}` +
-              (t.fees ? ` fees ${t.fees}` : "") +
-              (t.tax ? ` tax ${t.tax}` : ""),
-            currency: t.currency,
-          };
-          const accounts = s.accounts.map((a) =>
-            a.id === t.accountId ? { ...a, balance: a.balance + cashDelta } : a,
-          );
+          const trades = [trade, ...s.trades];
+          const cashDelta = tradeCash(trade);
+          const txn = tradeTxn(trade, cashDelta);
+          const accounts = t.accountId
+            ? s.accounts.map((a) => (a.id === t.accountId ? { ...a, balance: a.balance + cashDelta } : a))
+            : s.accounts;
           return {
-            holdings,
-            trades: [trade, ...s.trades],
-            transactions: [txn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)),
+            assetMeta,
+            trades,
+            holdings: deriveHoldings(trades, s.holdings, assetMeta),
+            transactions: t.accountId
+              ? [txn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1))
+              : s.transactions,
             accounts,
           };
         });
       },
+
+      /** Edit a logged trade (including backdating). Cash and holdings re-sync. */
+      updateTrade: (id, patch) =>
+        set((s) => {
+          const old = s.trades.find((t) => t.id === id);
+          if (!old) return {};
+          const next: Trade = { ...old, ...patch, id: old.id, symbol: (patch.symbol ?? old.symbol).toUpperCase() };
+          const trades = s.trades.map((t) => (t.id === id ? next : t));
+          const oldDelta = tradeCash(old);
+          const newDelta = tradeCash(next);
+          const accounts = s.accounts.map((a) => {
+            let bal = a.balance;
+            if (a.id === old.accountId) bal -= oldDelta;
+            if (a.id === next.accountId) bal += newDelta;
+            return bal === a.balance ? a : { ...a, balance: bal };
+          });
+          const transactions = s.transactions
+            .map((t) => (t.tradeId === id ? { ...tradeTxn(next, newDelta), id: t.id } : t))
+            .sort((a, b) => (a.date < b.date ? 1 : -1));
+          return {
+            trades,
+            accounts,
+            transactions,
+            holdings: deriveHoldings(trades, s.holdings, s.assetMeta),
+          };
+        }),
+
+      deleteTrade: (id) =>
+        set((s) => {
+          const old = s.trades.find((t) => t.id === id);
+          if (!old) return {};
+          const delta = tradeCash(old);
+          const trades = s.trades.filter((t) => t.id !== id);
+          return {
+            trades,
+            accounts: s.accounts.map((a) =>
+              a.id === old.accountId ? { ...a, balance: a.balance - delta } : a,
+            ),
+            transactions: s.transactions.filter((t) => t.tradeId !== id),
+            holdings: deriveHoldings(trades, s.holdings, s.assetMeta),
+          };
+        }),
+
 
       addBudget: (b) => {
         const budget: Budget = { ...b, id: uid(), spent: b.spent ?? 0 };
@@ -410,6 +481,13 @@ export const useFinance = create<FinanceState>()(
           return 0;
         }
       },
+      refreshAllHistory: async () => {
+        const symbols = Array.from(new Set(get().holdings.map((h) => h.symbol))).filter(Boolean);
+        let n = 0;
+        for (const sym of symbols) n += (await get().refreshHistory(sym)) > 0 ? 1 : 0;
+        return n;
+      },
+
       refreshFx: async () => {
         const base = get().settings.baseCurrency;
         const currencies = new Set<string>([base]);
@@ -435,7 +513,51 @@ export const useFinance = create<FinanceState>()(
     }),
     {
       name: "noventrum-store-v2",
-      version: 2,
+      version: 3,
+      migrate: (persisted, version) => {
+        const s = persisted as Partial<FinanceState>;
+        if (version < 3) {
+          // v2 kept hand-entered holdings. Convert them into opening buy
+          // trades so the ledger becomes the single source of truth.
+          const trades = [...(s.trades ?? [])];
+          const assetMeta: Record<string, SymbolMeta> = { ...(s.assetMeta ?? {}) };
+          for (const h of s.holdings ?? []) {
+            assetMeta[h.symbol] = {
+              name: h.name,
+              assetClass: h.assetClass,
+              currency: h.currency,
+              sector: h.sector,
+            };
+            const logged = trades
+              .filter((t) => t.symbol === h.symbol)
+              .reduce((sum, t) => sum + (t.side === "buy" ? t.shares : -t.shares), 0);
+            const missing = Math.round((h.shares - logged) * 1e8) / 1e8;
+            if (missing > 0) {
+              trades.push({
+                id: `legacy-${h.symbol}`,
+                date: "2000-01-01",
+                symbol: h.symbol,
+                side: "buy",
+                shares: missing,
+                price: h.avgCost || h.price,
+                fees: 0,
+                accountId: "",
+                currency: h.currency,
+                name: h.name,
+                assetClass: h.assetClass,
+                notes: "imported opening position",
+              });
+            }
+          }
+          return {
+            ...s,
+            assetMeta,
+            trades,
+            holdings: deriveHoldings(trades, s.holdings ?? [], assetMeta),
+          } as FinanceState;
+        }
+        return persisted as FinanceState;
+      },
       storage: createJSONStorage(() =>
         typeof window === "undefined"
           ? {
@@ -452,5 +574,13 @@ export const useFinance = create<FinanceState>()(
 
 export function hydrateFinance() {
   if (typeof window === "undefined") return;
-  void useFinance.persist.rehydrate();
+  void useFinance.persist.rehydrate()?.then?.(() => {
+    const s = useFinance.getState();
+    if (s.holdings.length === 0) return;
+    // live prices + historical closes power current and past valuations
+    void s.refreshPrices();
+    void s.refreshAllHistory();
+    void s.refreshFx();
+  });
 }
+

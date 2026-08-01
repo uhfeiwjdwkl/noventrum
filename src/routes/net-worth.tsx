@@ -21,10 +21,14 @@ export const Route = createFileRoute("/net-worth")({
 function NetWorthPage() {
   const accounts = useFinance((s) => s.accounts);
   const transactions = useFinance((s) => s.transactions);
+  const holdings = useFinance((s) => s.holdings);
+  const trades = useFinance((s) => s.trades);
+  const properties = useFinance((s) => s.properties);
+  const physicalAssets = useFinance((s) => s.physicalAssets);
   const [addOpen, setAddOpen] = useState(false);
 
   const nw = netWorth(accounts);
-  const series = netWorthSeries(accounts, transactions);
+  const series = netWorthSeries(accounts, transactions, holdings, properties, physicalAssets, trades);
   const first = series[0]?.value ?? nw;
   const change = first !== 0 ? ((nw - first) / Math.abs(first)) * 100 : 0;
   const assets = accounts.filter((a) => a.balance > 0);
