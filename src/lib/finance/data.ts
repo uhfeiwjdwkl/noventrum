@@ -62,7 +62,11 @@ export interface Trade {
   tax?: number;
   accountId: string;
   currency?: string;
+  name?: string;
+  assetClass?: AssetClass;
+  notes?: string;
 }
+
 
 export interface Budget {
   id: string;
