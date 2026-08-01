@@ -118,14 +118,37 @@ export function BuySellDialog({
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-2">
-              <Label>Symbol / Ticker</Label>
-              <div className="flex gap-2 mt-1.5">
-                <Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL, BTC-USD, VUSA.L" required autoFocus />
-                <Button type="button" variant="outline" size="icon" onClick={lookup} disabled={loading} title="Fetch live quote">
-                  <RefreshCw className={"h-4 w-4 " + (loading ? "animate-spin" : "")} />
-                </Button>
+              <Label>Asset</Label>
+              <div className="mt-1.5">
+                <SymbolSearch
+                  value={symbol}
+                  onChange={setSymbol}
+                  autoFocus
+                  onSelect={async (m) => {
+                    setName(m.name);
+                    const t = m.type.toLowerCase();
+                    setAssetClass(
+                      t.includes("etf") ? "etf"
+                        : t.includes("crypto") ? "crypto"
+                        : t.includes("future") || t.includes("commodity") ? "commodity"
+                        : t.includes("equity") || t.includes("stock") ? "stock"
+                        : "other",
+                    );
+                    setLoading(true);
+                    try {
+                      const q = await getQuote({ data: { symbol: m.symbol } });
+                      setPrice(q.price.toFixed(2));
+                      setCurrency(q.currency);
+                    } catch {
+                      /* keep manual entry */
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                />
               </div>
             </div>
+
             <div>
               <Label>Side</Label>
               <Select value={side} onValueChange={(v) => setSide(v as "buy" | "sell")}>
