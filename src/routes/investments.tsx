@@ -4,11 +4,13 @@ import { StatCard } from "@/components/finance/StatCard";
 import { EmptyState } from "@/components/finance/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFinance } from "@/lib/finance/store";
-import { portfolioCost, portfolioValue, assetAllocation, fmtCurrency, fmtPct } from "@/lib/finance/data";
+import { portfolioCost, portfolioValue, assetAllocation, realizedPL, fmtCurrency, fmtPct } from "@/lib/finance/data";
+import type { Trade } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { LineChart as LineIcon, Trash2, RefreshCw } from "lucide-react";
+import { LineChart as LineIcon, Trash2, RefreshCw, Pencil } from "lucide-react";
 import { AddHoldingDialog } from "@/components/finance/AddDialogs";
 import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { useState } from "react";
@@ -23,10 +25,14 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--cha
 
 function InvestmentsPage() {
   const holdings = useFinance((s) => s.holdings);
+  const trades = useFinance((s) => s.trades);
+  const accounts = useFinance((s) => s.accounts);
   const deleteHolding = useFinance((s) => s.deleteHolding);
+  const deleteTrade = useFinance((s) => s.deleteTrade);
   const refreshPrices = useFinance((s) => s.refreshPrices);
   const [addOpen, setAddOpen] = useState(false);
   const [tradeOpen, setTradeOpen] = useState(false);
+  const [editing, setEditing] = useState<Trade | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   async function doRefresh() {
@@ -41,7 +47,10 @@ function InvestmentsPage() {
   const pc = portfolioCost(holdings);
   const pl = pv - pc;
   const plPct = pc > 0 ? (pl / pc) * 100 : 0;
+  const realized = realizedPL(holdings);
   const alloc = assetAllocation(holdings);
+  const sortedTrades = [...trades].sort((a, b) => (a.date < b.date ? 1 : -1));
+
 
   return (
     <AppShell
