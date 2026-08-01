@@ -238,22 +238,26 @@ export function netWorthSeries(
   holdings: Holding[] = [],
   properties: Property[] = [],
   physical: PhysicalAsset[] = [],
+  trades: Trade[] = [],
 ): { month: string; value: number }[] {
   const now = totalNetWorth(accounts, holdings, properties, physical);
   const cf = monthlyCashflow(transactions);
   if (cf.length === 0) return [];
 
-  // For each month, use holdings' historical close for that month if available,
-  // else the current price. For properties/physical, use closest valuation.
+  // Shares held that month come from the trade ledger; price comes from the
+  // cached historical closes (falling back to the live price).
   const monthPortfolio = (month: string) => {
+    const asOf = `${month}-31`;
     let total = 0;
     for (const h of holdings) {
+      const shares = trades.length ? sharesAt(trades, h.symbol, asOf) : h.shares;
+      if (shares <= 0) continue;
       const pt = [...h.history].reverse().find((p) => p.date.slice(0, 7) <= month);
-      const price = pt?.price ?? h.price;
-      total += h.shares * price;
+      total += shares * (pt?.price ?? h.price);
     }
     return total;
   };
+
   const monthProperty = (month: string) => {
     let total = 0;
     for (const p of properties) {
