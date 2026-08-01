@@ -67,21 +67,23 @@ function InvestmentsPage() {
         </>
       }
     >
-      {holdings.length === 0 ? (
+      {holdings.length === 0 && trades.length === 0 ? (
         <EmptyState
           icon={<LineIcon className="h-6 w-6" />}
-          title="No holdings yet"
-          description="Add stocks, ETFs, crypto or other positions to track your portfolio."
-          action={{ label: "Add holding", onClick: () => setAddOpen(true) }}
+          title="No trades yet"
+          description="Log a buy — search any stock, ETF, crypto or commodity and your holdings build themselves from the ledger."
+          action={{ label: "Log a trade", onClick: () => setTradeOpen(true) }}
         />
       ) : (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <StatCard label="Portfolio value" value={pv} change={plPct} hint="all time" />
             <StatCard label="Cost basis" value={pc} />
             <StatCard label="Unrealized P/L" value={pl} />
+            <StatCard label="Realized P/L" value={realized} />
             <StatCard label="Holdings" value={holdings.length} currency={false} />
           </div>
+
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             <Card className="p-5 lg:col-span-2">
