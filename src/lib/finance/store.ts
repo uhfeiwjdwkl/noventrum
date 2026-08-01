@@ -19,6 +19,31 @@ const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
+/** Cash movement a trade causes on its settlement account. */
+function tradeCash(t: Trade) {
+  const extra = (t.fees || 0) + (t.tax ?? 0);
+  return t.side === "buy" ? -(t.shares * t.price + extra) : t.shares * t.price - extra;
+}
+
+/** The cash transaction mirroring a trade. */
+function tradeTxn(t: Trade, cashDelta: number): Transaction {
+  return {
+    id: uid(),
+    date: t.date,
+    accountId: t.accountId,
+    amount: cashDelta,
+    kind: "trade",
+    category: t.side === "buy" ? "Buy" : "Sell",
+    merchant: t.symbol,
+    notes:
+      `${t.side.toUpperCase()} ${t.shares} @ ${t.price}` +
+      (t.fees ? ` fees ${t.fees}` : "") +
+      (t.tax ? ` tax ${t.tax}` : ""),
+    currency: t.currency,
+    tradeId: t.id,
+  };
+}
+
 
 export interface Settings {
   baseCurrency: string;
