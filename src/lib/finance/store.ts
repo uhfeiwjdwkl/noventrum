@@ -45,12 +45,13 @@ export interface FinanceState {
   addTransaction: (t: Omit<Transaction, "id">) => Transaction;
   deleteTransaction: (id: string) => void;
 
-  addHolding: (h: Omit<Holding, "id" | "history">) => Holding;
+  /** Deprecated manual entry — recorded as an opening buy trade. */
+  addHolding: (h: Omit<Holding, "id" | "history"> & { accountId?: string; date?: string }) => void;
   updateHolding: (id: string, patch: Partial<Holding>) => void;
   deleteHolding: (id: string) => void;
 
-  /** Buy/sell any tradable asset. Updates the Holding, records the Trade,
-   *  and posts a Transaction against the linked brokerage account. */
+  /** Buy/sell any tradable asset. The trade ledger is the source of truth —
+   *  holdings, cost basis and realized P/L are recomputed from it. */
   recordTrade: (t: {
     date: string;
     symbol: string;
@@ -63,7 +64,11 @@ export interface FinanceState {
     tax?: number;
     accountId: string;
     currency?: string;
+    notes?: string;
   }) => void;
+  updateTrade: (id: string, patch: Partial<Omit<Trade, "id">>) => void;
+  deleteTrade: (id: string) => void;
+
 
   addBudget: (b: Omit<Budget, "id" | "spent"> & { spent?: number }) => Budget;
   deleteBudget: (id: string) => void;
