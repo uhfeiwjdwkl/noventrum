@@ -42,7 +42,55 @@ async function fetchYahoo(symbol: string, range: string, interval: string) {
   }>;
 }
 
+export interface SymbolMatch {
+  symbol: string;
+  name: string;
+  exchange: string;
+  type: string;
+}
+
+/** Ticker autocomplete — searches stocks, ETFs, crypto, futures, FX. */
+export const searchSymbols = createServerFn({ method: "GET" })
+  .inputValidator((data: { query: string }) => data)
+  .handler(async ({ data }): Promise<SymbolMatch[]> => {
+    const q = data.query.trim();
+    if (q.length < 1) return [];
+    const url =
+      "https://query1.finance.yahoo.com/v1/finance/search?q=" +
+      encodeURIComponent(q) +
+      "&quotesCount=12&newsCount=0&listsCount=0&enableFuzzyQuery=true";
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; Noventrum/1.0; +https://noventrum.kommenszlapf.website)",
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) return [];
+    const j = (await res.json()) as {
+      quotes?: Array<{
+        symbol?: string;
+        shortname?: string;
+        longname?: string;
+        exchDisp?: string;
+        exchange?: string;
+        quoteType?: string;
+        typeDisp?: string;
+        isYahooFinance?: boolean;
+      }>;
+    };
+    return (j.quotes ?? [])
+      .filter((x) => x.symbol && x.isYahooFinance !== false)
+      .map((x) => ({
+        symbol: x.symbol!,
+        name: x.longname ?? x.shortname ?? x.symbol!,
+        exchange: x.exchDisp ?? x.exchange ?? "",
+        type: (x.typeDisp ?? x.quoteType ?? "").toString(),
+      }));
+  });
+
 export interface Quote {
+
   symbol: string;
   price: number;
   previousClose: number;
