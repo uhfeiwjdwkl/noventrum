@@ -19,10 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RefreshCw } from "lucide-react";
 import { useFinance } from "@/lib/finance/store";
 import type { AssetClass } from "@/lib/finance/data";
 import { getQuote } from "@/lib/prices.functions";
+import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { toast } from "sonner";
 
 const today = () => new Date().toISOString().slice(0, 10);
