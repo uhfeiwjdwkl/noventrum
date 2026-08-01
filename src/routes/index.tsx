@@ -47,12 +47,15 @@ function Dashboard() {
   const accounts = useFinance((s) => s.accounts);
   const transactions = useFinance((s) => s.transactions);
   const holdings = useFinance((s) => s.holdings);
+  const trades = useFinance((s) => s.trades);
+  const properties = useFinance((s) => s.properties);
+  const physicalAssets = useFinance((s) => s.physicalAssets);
 
   const nw = netWorth(accounts);
   const cashflow = monthlyCashflow(transactions).slice(-12);
   const lastMonth = cashflow[cashflow.length - 1] ?? { income: 0, expense: 0, net: 0 };
   const savingsRate = lastMonth.income > 0 ? ((lastMonth.income - lastMonth.expense) / lastMonth.income) * 100 : 0;
-  const nws = netWorthSeries(accounts, transactions);
+  const nws = netWorthSeries(accounts, transactions, holdings, properties, physicalAssets, trades);
   const first = nws[0]?.value ?? nw;
   const nwChange = first !== 0 ? ((nw - first) / Math.abs(first)) * 100 : 0;
   const pv = portfolioValue(holdings);
