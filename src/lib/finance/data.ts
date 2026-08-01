@@ -375,3 +375,101 @@ export function fmtPct(n: number) {
   if (!isFinite(n)) return "0.00%";
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
+
+// ---- trade-derived holdings ----
+
+export interface SymbolMeta {
+  name?: string;
+  assetClass?: AssetClass;
+  currency?: string;
+  sector?: string;
+}
+
+/**
+ * Holdings are never entered by hand — they are the running result of the
+ * trade ledger. Average-cost basis; sells release cost proportionally and
+ * book realized P/L. Live price / history / day-change are carried over from
+ * the previous holding record (they come from Yahoo, not from the ledger).
+ */
+export function deriveHoldings(
+  trades: Trade[],
+  prev: Holding[] = [],
+  meta: Record<string, SymbolMeta> = {},
+): Holding[] {
+  const sorted = [...trades].sort((a, b) => (a.date === b.date ? 0 : a.date < b.date ? -1 : 1));
+  const acc = new Map<string, { shares: number; cost: number; realized: number; last: number; currency?: string }>();
+
+  for (const t of sorted) {
+    const sym = t.symbol.toUpperCase();
+    const cur = acc.get(sym) ?? { shares: 0, cost: 0, realized: 0, last: t.price, currency: t.currency };
+    const extra = (t.fees || 0) + (t.tax ?? 0);
+    if (t.side === "buy") {
+      cur.shares += t.shares;
+      cur.cost += t.shares * t.price + extra;
+    } else {
+      const avg = cur.shares > 0 ? cur.cost / cur.shares : t.price;
+      const qty = Math.min(t.shares, cur.shares);
+      cur.realized += qty * (t.price - avg) - extra;
+      cur.shares = Math.max(0, cur.shares - t.shares);
+      cur.cost = Math.max(0, cur.cost - qty * avg);
+    }
+    cur.last = t.price;
+    cur.currency = t.currency ?? cur.currency;
+    acc.set(sym, cur);
+  }
+
+  const out: Holding[] = [];
+  for (const [symbol, v] of acc) {
+    const old = prev.find((h) => h.symbol === symbol);
+    const m = meta[symbol] ?? {};
+    out.push({
+      id: old?.id ?? symbol,
+      symbol,
+      name: m.name || old?.name || symbol,
+      assetClass: m.assetClass ?? old?.assetClass ?? "stock",
+      shares: Math.round(v.shares * 1e8) / 1e8,
+      avgCost: v.shares > 0 ? v.cost / v.shares : 0,
+      price: old?.price && old.price > 0 ? old.price : v.last,
+      dayChangePct: old?.dayChangePct ?? 0,
+      sector: m.sector ?? old?.sector,
+      currency: m.currency ?? old?.currency ?? v.currency,
+      priceUpdatedAt: old?.priceUpdatedAt,
+      realized: Math.round(v.realized * 100) / 100,
+      history: old?.history ?? [],
+    });
+  }
+  return out.filter((h) => h.shares > 0.00000001 || (h.realized ?? 0) !== 0);
+}
+
+/** Shares of `symbol` held on (or before) an ISO date, from the ledger. */
+export function sharesAt(trades: Trade[], symbol: string, date: string) {
+  let shares = 0;
+  for (const t of trades) {
+    if (t.symbol.toUpperCase() !== symbol.toUpperCase()) continue;
+    if (t.date > date) continue;
+    shares += t.side === "buy" ? t.shares : -t.shares;
+  }
+  return Math.max(0, shares);
+}
+
+/** Historical close for a symbol at/just before a date, falling back to live price. */
+export function priceAt(holding: Holding, date: string) {
+  const pt = [...holding.history].reverse().find((p) => p.date <= date);
+  return pt?.price ?? holding.price;
+}
+
+/** Portfolio market value at any past date: ledger shares × historical close. */
+export function portfolioValueAt(holdings: Holding[], trades: Trade[], date: string) {
+  let total = 0;
+  for (const h of holdings) {
+    const q = sharesAt(trades, h.symbol, date);
+    if (q <= 0) continue;
+    total += q * priceAt(h, date);
+  }
+  return total;
+}
+
+/** Realized P/L booked across all closed positions. */
+export function realizedPL(holdings: Holding[]) {
+  return holdings.reduce((s, h) => s + (h.realized ?? 0), 0);
+}
