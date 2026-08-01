@@ -12,6 +12,7 @@ import type {
   PhysicalAsset,
   IncomeSource,
 } from "./data";
+import { deriveHoldings, type SymbolMeta } from "./data";
 import { getQuotes, getHistory, getFxRates } from "@/lib/prices.functions";
 
 const uid = () =>
