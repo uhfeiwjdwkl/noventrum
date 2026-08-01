@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
-import type { AssetClass } from "@/lib/finance/data";
+import type { AssetClass, Trade } from "@/lib/finance/data";
 import { getQuote } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { toast } from "sonner";
