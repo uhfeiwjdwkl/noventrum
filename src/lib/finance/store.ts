@@ -124,6 +124,7 @@ export interface FinanceState {
 
   refreshPrices: () => Promise<{ updated: number; failed: number }>;
   refreshHistory: (symbol: string) => Promise<number>;
+  refreshAllHistory: () => Promise<number>;
   refreshFx: () => Promise<number>;
   setBaseCurrency: (c: string) => void;
 
