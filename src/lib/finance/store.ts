@@ -480,6 +480,13 @@ export const useFinance = create<FinanceState>()(
           return 0;
         }
       },
+      refreshAllHistory: async () => {
+        const symbols = Array.from(new Set(get().holdings.map((h) => h.symbol))).filter(Boolean);
+        let n = 0;
+        for (const sym of symbols) n += (await get().refreshHistory(sym)) > 0 ? 1 : 0;
+        return n;
+      },
+
       refreshFx: async () => {
         const base = get().settings.baseCurrency;
         const currencies = new Set<string>([base]);
