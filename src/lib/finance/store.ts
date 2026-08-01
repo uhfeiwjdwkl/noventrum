@@ -117,6 +117,7 @@ const empty = {
   physicalAssets: [] as PhysicalAsset[],
   incomeSources: [] as IncomeSource[],
   fxRates: { USD: 1, __base: "USD" as string } as unknown as Record<string, number> & { __base?: string },
+  assetMeta: {} as Record<string, SymbolMeta>,
   settings: { baseCurrency: "USD" } as Settings,
 };
 
