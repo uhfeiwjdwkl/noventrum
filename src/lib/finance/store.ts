@@ -505,7 +505,51 @@ export const useFinance = create<FinanceState>()(
     }),
     {
       name: "noventrum-store-v2",
-      version: 2,
+      version: 3,
+      migrate: (persisted, version) => {
+        const s = persisted as Partial<FinanceState>;
+        if (version < 3) {
+          // v2 kept hand-entered holdings. Convert them into opening buy
+          // trades so the ledger becomes the single source of truth.
+          const trades = [...(s.trades ?? [])];
+          const assetMeta: Record<string, SymbolMeta> = { ...(s.assetMeta ?? {}) };
+          for (const h of s.holdings ?? []) {
+            assetMeta[h.symbol] = {
+              name: h.name,
+              assetClass: h.assetClass,
+              currency: h.currency,
+              sector: h.sector,
+            };
+            const logged = trades
+              .filter((t) => t.symbol === h.symbol)
+              .reduce((sum, t) => sum + (t.side === "buy" ? t.shares : -t.shares), 0);
+            const missing = Math.round((h.shares - logged) * 1e8) / 1e8;
+            if (missing > 0) {
+              trades.push({
+                id: `legacy-${h.symbol}`,
+                date: "2000-01-01",
+                symbol: h.symbol,
+                side: "buy",
+                shares: missing,
+                price: h.avgCost || h.price,
+                fees: 0,
+                accountId: "",
+                currency: h.currency,
+                name: h.name,
+                assetClass: h.assetClass,
+                notes: "imported opening position",
+              });
+            }
+          }
+          return {
+            ...s,
+            assetMeta,
+            trades,
+            holdings: deriveHoldings(trades, s.holdings ?? [], assetMeta),
+          } as FinanceState;
+        }
+        return persisted as FinanceState;
+      },
       storage: createJSONStorage(() =>
         typeof window === "undefined"
           ? {
@@ -522,5 +566,13 @@ export const useFinance = create<FinanceState>()(
 
 export function hydrateFinance() {
   if (typeof window === "undefined") return;
-  void useFinance.persist.rehydrate();
+  void useFinance.persist.rehydrate()?.then?.(() => {
+    const s = useFinance.getState();
+    if (s.holdings.length === 0) return;
+    // live prices + historical closes power current and past valuations
+    void s.refreshPrices();
+    void s.refreshAllHistory();
+    void s.refreshFx();
+  });
 }
+
