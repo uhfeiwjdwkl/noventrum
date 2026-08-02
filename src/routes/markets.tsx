@@ -10,7 +10,7 @@ import { fmtCurrency, fmtPct } from "@/lib/finance/data";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
 import { Search, CandlestickChart } from "lucide-react";
 import { useMemo, useState } from "react";
-import { AddHoldingDialog } from "@/components/finance/AddDialogs";
+import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({ meta: [{ title: "Markets — Noventrum" }] }),
@@ -27,7 +27,7 @@ function MarketsPage() {
     <AppShell
       title="Markets"
       subtitle="Your watchlist of tracked instruments."
-      actions={<AddHoldingDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add to watchlist</Button>} />}
+      actions={<BuySellDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Buy / Sell</Button>} />}
     >
       {holdings.length === 0 ? (
         <EmptyState

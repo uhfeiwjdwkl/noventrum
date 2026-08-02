@@ -11,15 +11,28 @@ import type {
   Property,
   PhysicalAsset,
   IncomeSource,
+  RecurringRule,
+  RecurUnit,
+  WatchItem,
+  FxHistory,
+  FxMap,
 } from "./data";
-import { deriveHoldings, type SymbolMeta } from "./data";
-import { getQuotes, getHistory, getFxRates } from "@/lib/prices.functions";
+import { deriveHoldings, dueDates, type SymbolMeta } from "./data";
+import {
+  getQuotes,
+  getHistory,
+  getFxRates,
+  getFxRatesAt,
+} from "@/lib/prices.functions";
 
 const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
-/** Cash movement a trade causes on its settlement account. */
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+/** Cash movement a trade causes on its settlement account (asset currency). */
 function tradeCash(t: Trade) {
   const extra = (t.fees || 0) + (t.tax ?? 0);
   return t.side === "buy" ? -(t.shares * t.price + extra) : t.shares * t.price - extra;
@@ -44,10 +57,28 @@ function tradeTxn(t: Trade, cashDelta: number): Transaction {
   };
 }
 
-
 export interface Settings {
   baseCurrency: string;
+  /** currency codes offered in pickers (base + custom additions) */
+  currencies: string[];
+  /** show prices in the asset's own currency instead of the base one */
+  displayNative: boolean;
 }
+
+export const DEFAULT_CURRENCIES = [
+  "AUD",
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CAD",
+  "NZD",
+  "CHF",
+  "CNY",
+  "SGD",
+  "HKD",
+  "INR",
+];
 
 export interface FinanceState {
   accounts: Account[];
@@ -60,25 +91,29 @@ export interface FinanceState {
   properties: Property[];
   physicalAssets: PhysicalAsset[];
   incomeSources: IncomeSource[];
-  fxRates: Record<string, number> & { __base?: string };
-  /** per-symbol display info kept alongside the ledger */
+  recurringRules: RecurringRule[];
+  watchlist: WatchItem[];
+  fxRates: FxMap;
+  fxHistory: FxHistory;
   assetMeta: Record<string, SymbolMeta>;
   settings: Settings;
+  /** set while the ledger is being re-based onto a new default currency */
+  rebasing: boolean;
 
   addAccount: (a: Omit<Account, "id">) => Account;
   updateAccount: (id: string, patch: Partial<Account>) => void;
   deleteAccount: (id: string) => void;
 
   addTransaction: (t: Omit<Transaction, "id">) => Transaction;
+  updateTransaction: (id: string, patch: Partial<Omit<Transaction, "id">>) => void;
   deleteTransaction: (id: string) => void;
+  deleteTransactions: (ids: string[]) => void;
+  bulkUpdateTransactions: (ids: string[], patch: Partial<Omit<Transaction, "id">>) => void;
 
-  /** Deprecated manual entry — recorded as an opening buy trade. */
-  addHolding: (h: Omit<Holding, "id" | "history"> & { accountId?: string; date?: string }) => void;
   updateHolding: (id: string, patch: Partial<Holding>) => void;
   deleteHolding: (id: string) => void;
 
-  /** Buy/sell any tradable asset. The trade ledger is the source of truth —
-   *  holdings, cost basis and realized P/L are recomputed from it. */
+  /** Buy/sell any tradable asset. The trade ledger is the source of truth. */
   recordTrade: (t: {
     date: string;
     symbol: string;
@@ -91,11 +126,22 @@ export interface FinanceState {
     tax?: number;
     accountId: string;
     currency?: string;
+    fxRate?: number;
     notes?: string;
   }) => void;
   updateTrade: (id: string, patch: Partial<Omit<Trade, "id">>) => void;
   deleteTrade: (id: string) => void;
 
+  /** Exchange one currency for another between two accounts. */
+  recordExchange: (x: {
+    date: string;
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    rate: number;
+    fees?: number;
+    notes?: string;
+  }) => void;
 
   addBudget: (b: Omit<Budget, "id" | "spent"> & { spent?: number }) => Budget;
   deleteBudget: (id: string) => void;
@@ -107,26 +153,49 @@ export interface FinanceState {
   addDividend: (d: Omit<Dividend, "id">) => Dividend;
   deleteDividend: (id: string) => void;
 
-  addProperty: (p: Omit<Property, "id" | "valuations" | "currentValue"> & {
-    currentValue?: number;
-    valuations?: Property["valuations"];
-  }) => Property;
+  addProperty: (
+    p: Omit<Property, "id" | "valuations" | "currentValue"> & {
+      currentValue?: number;
+      valuations?: Property["valuations"];
+    },
+  ) => Property;
   updateProperty: (id: string, patch: Partial<Property>) => void;
   addPropertyValuation: (id: string, date: string, value: number) => void;
   deleteProperty: (id: string) => void;
 
-  addPhysicalAsset: (a: Omit<PhysicalAsset, "id" | "currentValue"> & { currentValue?: number }) => PhysicalAsset;
+  addPhysicalAsset: (
+    a: Omit<PhysicalAsset, "id" | "currentValue"> & { currentValue?: number },
+  ) => PhysicalAsset;
   updatePhysicalAsset: (id: string, patch: Partial<PhysicalAsset>) => void;
   deletePhysicalAsset: (id: string) => void;
 
   addIncomeSource: (s: Omit<IncomeSource, "id" | "active"> & { active?: boolean }) => IncomeSource;
   deleteIncomeSource: (id: string) => void;
 
+  addRecurringRule: (
+    r: Omit<RecurringRule, "id" | "active" | "lastRun">,
+  ) => RecurringRule;
+  cancelRecurringRule: (id: string) => void;
+  deleteRecurringRule: (id: string) => void;
+  /** Materialise every due occurrence into real transactions. */
+  runRecurring: () => number;
+
+  addWatch: (w: WatchItem) => void;
+  removeWatch: (symbol: string) => void;
+  refreshWatchlist: () => Promise<void>;
+
   refreshPrices: () => Promise<{ updated: number; failed: number }>;
   refreshHistory: (symbol: string) => Promise<number>;
   refreshAllHistory: () => Promise<number>;
   refreshFx: () => Promise<number>;
-  setBaseCurrency: (c: string) => void;
+  refreshFxHistory: () => Promise<number>;
+  /** Fill in missing trade-date FX rates so cost basis is correct in base. */
+  backfillFxRates: () => Promise<number>;
+
+  addCurrency: (code: string) => void;
+  removeCurrency: (code: string) => void;
+  setDisplayNative: (v: boolean) => void;
+  setBaseCurrency: (c: string) => Promise<void>;
 
   resetAll: () => void;
 }
@@ -142,18 +211,29 @@ const empty = {
   properties: [] as Property[],
   physicalAssets: [] as PhysicalAsset[],
   incomeSources: [] as IncomeSource[],
-  fxRates: { USD: 1, __base: "USD" as string } as unknown as Record<string, number> & { __base?: string },
+  recurringRules: [] as RecurringRule[],
+  watchlist: [] as WatchItem[],
+  fxRates: { AUD: 1, __base: "AUD" } as unknown as FxMap,
+  fxHistory: {} as FxHistory,
   assetMeta: {} as Record<string, SymbolMeta>,
-  settings: { baseCurrency: "USD" } as Settings,
+  settings: {
+    baseCurrency: "AUD",
+    currencies: [...DEFAULT_CURRENCIES],
+    displayNative: false,
+  } as Settings,
+  rebasing: false,
 };
 
 export const useFinance = create<FinanceState>()(
   persist(
     (set, get) => ({
       ...empty,
+
+      /* ------------------------------ accounts ----------------------------- */
       addAccount: (a) => {
         const account: Account = { ...a, id: uid() };
         set((s) => ({ accounts: [...s.accounts, account] }));
+        if (account.currency !== get().settings.baseCurrency) void get().refreshFx();
         return account;
       },
       updateAccount: (id, patch) =>
@@ -165,6 +245,8 @@ export const useFinance = create<FinanceState>()(
           accounts: s.accounts.filter((a) => a.id !== id),
           transactions: s.transactions.filter((t) => t.accountId !== id),
         })),
+
+      /* ---------------------------- transactions --------------------------- */
       addTransaction: (t) => {
         const txn: Transaction = { ...t, id: uid() };
         set((s) => {
@@ -177,52 +259,59 @@ export const useFinance = create<FinanceState>()(
               : b,
           );
           return {
-            transactions: [txn, ...s.transactions].sort((a, b) =>
-              a.date < b.date ? 1 : -1,
-            ),
+            transactions: [txn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)),
             accounts,
             budgets,
           };
         });
         return txn;
       },
-      deleteTransaction: (id) =>
+      updateTransaction: (id, patch) =>
         set((s) => {
-          const t = s.transactions.find((x) => x.id === id);
-          if (!t) return {};
-          const accounts = s.accounts.map((a) =>
-            a.id === t.accountId ? { ...a, balance: a.balance - t.amount } : a,
-          );
-          const budgets = s.budgets.map((b) =>
-            t.kind === "expense" && b.category === t.category
-              ? { ...b, spent: Math.max(0, b.spent - Math.abs(t.amount)) }
-              : b,
-          );
+          const old = s.transactions.find((t) => t.id === id);
+          if (!old) return {};
+          const next: Transaction = { ...old, ...patch, id };
+          const accounts = s.accounts.map((a) => {
+            let bal = a.balance;
+            if (a.id === old.accountId) bal -= old.amount;
+            if (a.id === next.accountId) bal += next.amount;
+            return bal === a.balance ? a : { ...a, balance: bal };
+          });
           return {
-            transactions: s.transactions.filter((x) => x.id !== id),
+            accounts,
+            transactions: s.transactions
+              .map((t) => (t.id === id ? next : t))
+              .sort((a, b) => (a.date < b.date ? 1 : -1)),
+          };
+        }),
+      deleteTransaction: (id) => get().deleteTransactions([id]),
+      deleteTransactions: (ids) =>
+        set((s) => {
+          const doomed = s.transactions.filter((t) => ids.includes(t.id));
+          if (doomed.length === 0) return {};
+          const accounts = s.accounts.map((a) => {
+            const delta = doomed
+              .filter((t) => t.accountId === a.id)
+              .reduce((sum, t) => sum + t.amount, 0);
+            return delta ? { ...a, balance: a.balance - delta } : a;
+          });
+          const budgets = s.budgets.map((b) => {
+            const spent = doomed
+              .filter((t) => t.kind === "expense" && t.category === b.category)
+              .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            return spent ? { ...b, spent: Math.max(0, b.spent - spent) } : b;
+          });
+          return {
+            transactions: s.transactions.filter((t) => !ids.includes(t.id)),
             accounts,
             budgets,
           };
         }),
-      addHolding: (h) => {
-        const account =
-          h.accountId ||
-          get().accounts.find((a) => a.type === "brokerage" || a.type === "cash")?.id ||
-          "";
-        get().recordTrade({
-          date: h.date ?? new Date().toISOString().slice(0, 10),
-          symbol: h.symbol,
-          name: h.name,
-          assetClass: h.assetClass,
-          side: "buy",
-          shares: h.shares,
-          price: h.avgCost || h.price,
-          fees: 0,
-          accountId: account,
-          currency: h.currency,
-          notes: "opening position",
-        });
+      bulkUpdateTransactions: (ids, patch) => {
+        for (const id of ids) get().updateTransaction(id, patch);
       },
+
+      /* ------------------------------ holdings ----------------------------- */
       updateHolding: (id, patch) =>
         set((s) => ({
           holdings: s.holdings.map((h) => (h.id === id ? { ...h, ...patch } : h)),
@@ -245,12 +334,16 @@ export const useFinance = create<FinanceState>()(
             trades,
             accounts,
             transactions: s.transactions.filter((t) => !(t.tradeId && ids.has(t.tradeId))),
-            holdings: deriveHoldings(trades, s.holdings, s.assetMeta).filter((x) => x.symbol !== h.symbol),
+            holdings: deriveHoldings(trades, s.holdings, s.assetMeta).filter(
+              (x) => x.symbol !== h.symbol,
+            ),
           };
         }),
 
       recordTrade: (t) => {
         const sym = t.symbol.toUpperCase();
+        const base = get().settings.baseCurrency;
+        const cur = t.currency ?? base;
         const trade: Trade = {
           id: uid(),
           date: t.date,
@@ -261,10 +354,12 @@ export const useFinance = create<FinanceState>()(
           fees: t.fees || 0,
           tax: t.tax,
           accountId: t.accountId,
-          currency: t.currency,
+          currency: cur,
           name: t.name,
           assetClass: t.assetClass,
           notes: t.notes,
+          fxRate: t.fxRate ?? (cur === base ? 1 : undefined),
+          baseCurrency: base,
         };
         set((s) => {
           const assetMeta: Record<string, SymbolMeta> = {
@@ -273,14 +368,16 @@ export const useFinance = create<FinanceState>()(
               ...s.assetMeta[sym],
               name: t.name || s.assetMeta[sym]?.name,
               assetClass: t.assetClass ?? s.assetMeta[sym]?.assetClass,
-              currency: t.currency ?? s.assetMeta[sym]?.currency,
+              currency: cur ?? s.assetMeta[sym]?.currency,
             },
           };
           const trades = [trade, ...s.trades];
           const cashDelta = tradeCash(trade);
           const txn = tradeTxn(trade, cashDelta);
           const accounts = t.accountId
-            ? s.accounts.map((a) => (a.id === t.accountId ? { ...a, balance: a.balance + cashDelta } : a))
+            ? s.accounts.map((a) =>
+                a.id === t.accountId ? { ...a, balance: a.balance + cashDelta } : a,
+              )
             : s.accounts;
           return {
             assetMeta,
@@ -292,14 +389,28 @@ export const useFinance = create<FinanceState>()(
             accounts,
           };
         });
+        if (!trade.fxRate) void get().backfillFxRates();
       },
 
       /** Edit a logged trade (including backdating). Cash and holdings re-sync. */
-      updateTrade: (id, patch) =>
+      updateTrade: (id, patch) => {
         set((s) => {
           const old = s.trades.find((t) => t.id === id);
           if (!old) return {};
-          const next: Trade = { ...old, ...patch, id: old.id, symbol: (patch.symbol ?? old.symbol).toUpperCase() };
+          const next: Trade = {
+            ...old,
+            ...patch,
+            id: old.id,
+            symbol: (patch.symbol ?? old.symbol).toUpperCase(),
+          };
+          // date or currency changed → the stored rate no longer applies
+          if (
+            (patch.date && patch.date !== old.date) ||
+            (patch.currency && patch.currency !== old.currency)
+          ) {
+            next.fxRate =
+              next.currency === s.settings.baseCurrency ? 1 : (patch.fxRate ?? undefined);
+          }
           const trades = s.trades.map((t) => (t.id === id ? next : t));
           const oldDelta = tradeCash(old);
           const newDelta = tradeCash(next);
@@ -318,7 +429,9 @@ export const useFinance = create<FinanceState>()(
             transactions,
             holdings: deriveHoldings(trades, s.holdings, s.assetMeta),
           };
-        }),
+        });
+        void get().backfillFxRates();
+      },
 
       deleteTrade: (id) =>
         set((s) => {
@@ -326,24 +439,97 @@ export const useFinance = create<FinanceState>()(
           if (!old) return {};
           const delta = tradeCash(old);
           const trades = s.trades.filter((t) => t.id !== id);
+          const linked = s.transactions.filter((t) => t.tradeId === id);
+          const accounts = s.accounts.map((a) => {
+            const d = linked
+              .filter((t) => t.accountId === a.id)
+              .reduce((sum, t) => sum + t.amount, 0);
+            const fallback = a.id === old.accountId && linked.length === 0 ? delta : 0;
+            const total = d || fallback;
+            return total ? { ...a, balance: a.balance - total } : a;
+          });
           return {
             trades,
-            accounts: s.accounts.map((a) =>
-              a.id === old.accountId ? { ...a, balance: a.balance - delta } : a,
-            ),
+            accounts,
             transactions: s.transactions.filter((t) => t.tradeId !== id),
             holdings: deriveHoldings(trades, s.holdings, s.assetMeta),
           };
         }),
 
+      /* ----------------------------- currency FX ---------------------------- */
+      recordExchange: (x) => {
+        const s0 = get();
+        const from = s0.accounts.find((a) => a.id === x.fromAccountId);
+        const to = s0.accounts.find((a) => a.id === x.toAccountId);
+        if (!from || !to) return;
+        const fees = x.fees || 0;
+        const toAmount = (x.amount - fees) * x.rate;
+        const trade: Trade = {
+          id: uid(),
+          date: x.date,
+          symbol: `${from.currency}${to.currency}=X`,
+          side: "buy",
+          shares: toAmount,
+          price: x.rate > 0 ? 1 / x.rate : 0,
+          fees,
+          accountId: x.fromAccountId,
+          currency: from.currency,
+          name: `${from.currency} → ${to.currency}`,
+          assetClass: "forex",
+          notes: x.notes,
+          fxRate: from.currency === s0.settings.baseCurrency ? 1 : undefined,
+          baseCurrency: s0.settings.baseCurrency,
+          exchange: {
+            toAccountId: x.toAccountId,
+            toCurrency: to.currency,
+            toAmount,
+          },
+        };
+        const out: Transaction = {
+          id: uid(),
+          date: x.date,
+          accountId: x.fromAccountId,
+          amount: -x.amount,
+          kind: "transfer",
+          category: "Currency exchange",
+          merchant: `${from.currency} → ${to.currency}`,
+          notes: `rate ${x.rate}${fees ? ` fees ${fees}` : ""}`,
+          currency: from.currency,
+          tradeId: trade.id,
+        };
+        const inn: Transaction = {
+          id: uid(),
+          date: x.date,
+          accountId: x.toAccountId,
+          amount: toAmount,
+          kind: "transfer",
+          category: "Currency exchange",
+          merchant: `${from.currency} → ${to.currency}`,
+          notes: `rate ${x.rate}`,
+          currency: to.currency,
+          tradeId: trade.id,
+        };
+        set((s) => ({
+          trades: [trade, ...s.trades],
+          transactions: [out, inn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)),
+          accounts: s.accounts.map((a) =>
+            a.id === x.fromAccountId
+              ? { ...a, balance: a.balance - x.amount }
+              : a.id === x.toAccountId
+                ? { ...a, balance: a.balance + toAmount }
+                : a,
+          ),
+        }));
+        void get().refreshFx();
+      },
 
+      /* ------------------------------ budgets ------------------------------ */
       addBudget: (b) => {
         const budget: Budget = { ...b, id: uid(), spent: b.spent ?? 0 };
         set((s) => ({ budgets: [...s.budgets, budget] }));
         return budget;
       },
-      deleteBudget: (id) =>
-        set((s) => ({ budgets: s.budgets.filter((b) => b.id !== id) })),
+      deleteBudget: (id) => set((s) => ({ budgets: s.budgets.filter((b) => b.id !== id) })),
 
       addGoal: (g) => {
         const goal: Goal = { ...g, id: uid(), current: g.current ?? 0 };
@@ -351,16 +537,12 @@ export const useFinance = create<FinanceState>()(
         return goal;
       },
       updateGoal: (id, patch) =>
-        set((s) => ({
-          goals: s.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)),
-        })),
-      deleteGoal: (id) =>
-        set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+        set((s) => ({ goals: s.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) })),
+      deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
 
       addDividend: (d) => {
         const div: Dividend = { ...d, id: uid() };
         set((s) => {
-          // optionally post cash income to linked account
           let accounts = s.accounts;
           let transactions = s.transactions;
           if (d.accountId) {
@@ -385,8 +567,7 @@ export const useFinance = create<FinanceState>()(
         });
         return div;
       },
-      deleteDividend: (id) =>
-        set((s) => ({ dividends: s.dividends.filter((d) => d.id !== id) })),
+      deleteDividend: (id) => set((s) => ({ dividends: s.dividends.filter((d) => d.id !== id) })),
 
       addProperty: (p) => {
         const prop: Property = {
@@ -420,7 +601,11 @@ export const useFinance = create<FinanceState>()(
         set((s) => ({ properties: s.properties.filter((p) => p.id !== id) })),
 
       addPhysicalAsset: (a) => {
-        const asset: PhysicalAsset = { ...a, id: uid(), currentValue: a.currentValue ?? a.purchasePrice };
+        const asset: PhysicalAsset = {
+          ...a,
+          id: uid(),
+          currentValue: a.currentValue ?? a.purchasePrice,
+        };
         set((s) => ({ physicalAssets: [...s.physicalAssets, asset] }));
         return asset;
       },
@@ -439,6 +624,74 @@ export const useFinance = create<FinanceState>()(
       deleteIncomeSource: (id) =>
         set((s) => ({ incomeSources: s.incomeSources.filter((x) => x.id !== id) })),
 
+      /* ----------------------------- recurring ----------------------------- */
+      addRecurringRule: (r) => {
+        const rule: RecurringRule = { ...r, id: uid(), active: true };
+        set((s) => ({ recurringRules: [...s.recurringRules, rule] }));
+        get().runRecurring();
+        return rule;
+      },
+      /** Stops future entries. Everything already logged stays put. */
+      cancelRecurringRule: (id) =>
+        set((s) => ({
+          recurringRules: s.recurringRules.map((r) => (r.id === id ? { ...r, active: false } : r)),
+        })),
+      deleteRecurringRule: (id) =>
+        set((s) => ({ recurringRules: s.recurringRules.filter((r) => r.id !== id) })),
+      runRecurring: () => {
+        const until = todayISO();
+        let created = 0;
+        for (const rule of get().recurringRules) {
+          const dates = dueDates(rule, until);
+          if (dates.length === 0) continue;
+          for (const date of dates) {
+            get().addTransaction({ ...rule.template, date, recurring: true, ruleId: rule.id });
+            created++;
+          }
+          const last = dates[dates.length - 1];
+          set((s) => ({
+            recurringRules: s.recurringRules.map((r) =>
+              r.id === rule.id ? { ...r, lastRun: last } : r,
+            ),
+          }));
+        }
+        return created;
+      },
+
+      /* ----------------------------- watchlist ----------------------------- */
+      addWatch: (w) =>
+        set((s) =>
+          s.watchlist.some((x) => x.symbol === w.symbol)
+            ? {}
+            : { watchlist: [...s.watchlist, w] },
+        ),
+      removeWatch: (symbol) =>
+        set((s) => ({ watchlist: s.watchlist.filter((w) => w.symbol !== symbol) })),
+      refreshWatchlist: async () => {
+        const symbols = get().watchlist.map((w) => w.symbol);
+        if (symbols.length === 0) return;
+        try {
+          const quotes = await getQuotes({ data: { symbols } });
+          set((s) => ({
+            watchlist: s.watchlist.map((w) => {
+              const q = quotes[w.symbol];
+              return q
+                ? {
+                    ...w,
+                    price: q.price,
+                    dayChangePct: q.dayChangePct,
+                    currency: q.currency,
+                    name: w.name || q.name,
+                  }
+                : w;
+            }),
+          }));
+        } catch {
+          /* offline — keep cached values */
+        }
+      },
+
+      /* ------------------------------- prices ------------------------------ */
       refreshPrices: async () => {
         const symbols = Array.from(new Set(get().holdings.map((h) => h.symbol))).filter(Boolean);
         if (symbols.length === 0) return { updated: 0, failed: 0 };
@@ -461,6 +714,7 @@ export const useFinance = create<FinanceState>()(
               };
             }),
           }));
+          void get().refreshFx();
           return { updated, failed: symbols.length - updated };
         } catch {
           return { updated: 0, failed: symbols.length };
@@ -468,7 +722,9 @@ export const useFinance = create<FinanceState>()(
       },
       refreshHistory: async (symbol) => {
         try {
-          const { points } = await getHistory({ data: { symbol, range: "5y", interval: "1mo" } });
+          const { points } = await getHistory({
+            data: { symbol, range: "5y", interval: "1mo" },
+          });
           set((s) => ({
             holdings: s.holdings.map((h) =>
               h.symbol === symbol
@@ -495,32 +751,140 @@ export const useFinance = create<FinanceState>()(
         get().holdings.forEach((h) => h.currency && currencies.add(h.currency));
         get().properties.forEach((p) => currencies.add(p.currency));
         get().physicalAssets.forEach((a) => currencies.add(a.currency));
+        get().trades.forEach((t) => t.currency && currencies.add(t.currency));
         const symbols = Array.from(currencies);
         try {
           const rates = await getFxRates({ data: { base, symbols } });
-          set(() => ({ fxRates: { ...rates, __base: base } as Record<string, number> & { __base?: string } }));
+          set(() => ({ fxRates: { ...rates, [base]: 1, __base: base } as unknown as FxMap }));
           return Object.keys(rates).length;
         } catch {
           return 0;
         }
       },
-      setBaseCurrency: (c) => {
-        set((s) => ({ settings: { ...s.settings, baseCurrency: c } }));
+
+      refreshFxHistory: async () => {
+        const base = get().settings.baseCurrency;
+        const currencies = new Set<string>();
+        get().holdings.forEach((h) => h.currency && h.currency !== base && currencies.add(h.currency));
+        get().accounts.forEach((a) => a.currency !== base && currencies.add(a.currency));
+        let n = 0;
+        for (const cur of currencies) {
+          try {
+            const { points } = await getHistory({
+              data: { symbol: `${cur}${base}=X`, range: "5y", interval: "1mo" },
+            });
+            if (points.length === 0) continue;
+            const add: FxHistory = {};
+            for (const p of points) add[`${cur}:${p.date.slice(0, 7)}`] = p.close;
+            set((s) => ({ fxHistory: { ...s.fxHistory, ...add } }));
+            n++;
+          } catch {
+            /* keep going */
+          }
+        }
+        return n;
+      },
+
+      backfillFxRates: async () => {
+        const base = get().settings.baseCurrency;
+        const missing = get().trades.filter(
+          (t) => !t.fxRate || t.baseCurrency !== base,
+        );
+        if (missing.length === 0) return 0;
+        const pairs = missing
+          .filter((t) => (t.currency ?? base) !== base)
+          .map((t) => ({ from: t.currency ?? base, date: t.date }));
+        let rates: Record<string, number> = {};
+        if (pairs.length > 0) {
+          try {
+            rates = await getFxRatesAt({ data: { to: base, pairs } });
+          } catch {
+            rates = {};
+          }
+        }
+        let applied = 0;
+        set((s) => {
+          const trades = s.trades.map((t) => {
+            if (t.fxRate && t.baseCurrency === base) return t;
+            const cur = t.currency ?? base;
+            const rate = cur === base ? 1 : rates[`${cur}:${t.date}`];
+            if (!rate) return t;
+            applied++;
+            return { ...t, fxRate: rate, baseCurrency: base };
+          });
+          return { trades, holdings: deriveHoldings(trades, s.holdings, s.assetMeta) };
+        });
+        return applied;
+      },
+
+      /* ------------------------------ settings ----------------------------- */
+      addCurrency: (code) => {
+        const c = code.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(c)) return;
+        set((s) =>
+          s.settings.currencies.includes(c)
+            ? {}
+            : { settings: { ...s.settings, currencies: [...s.settings.currencies, c] } },
+        );
         void get().refreshFx();
+      },
+      removeCurrency: (code) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            currencies: s.settings.currencies.filter(
+              (c) => c !== code || c === s.settings.baseCurrency,
+            ),
+          },
+        })),
+      setDisplayNative: (v) =>
+        set((s) => ({ settings: { ...s.settings, displayNative: v } })),
+
+      /**
+       * Re-base everything onto a new default currency. Every trade's stored
+       * rate is invalidated and re-fetched for its own date, so historical
+       * cost basis and realized P/L stay accurate.
+       */
+      setBaseCurrency: async (c) => {
+        const base = c.trim().toUpperCase();
+        if (!base || base === get().settings.baseCurrency) return;
+        set((s) => ({
+          rebasing: true,
+          settings: {
+            ...s.settings,
+            baseCurrency: base,
+            currencies: s.settings.currencies.includes(base)
+              ? s.settings.currencies
+              : [...s.settings.currencies, base],
+          },
+          fxRates: { [base]: 1, __base: base } as unknown as FxMap,
+          fxHistory: {},
+          trades: s.trades.map((t) => ({
+            ...t,
+            baseCurrency: base,
+            fxRate: (t.currency ?? base) === base ? 1 : undefined,
+          })),
+        }));
+        try {
+          await get().refreshFx();
+          await get().backfillFxRates();
+          await get().refreshFxHistory();
+        } finally {
+          set(() => ({ rebasing: false }));
+        }
       },
 
       resetAll: () => set({ ...empty }),
     }),
     {
       name: "noventrum-store-v2",
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         const s = persisted as Partial<FinanceState>;
+        let trades = [...(s.trades ?? [])];
+        let assetMeta: Record<string, SymbolMeta> = { ...(s.assetMeta ?? {}) };
+
         if (version < 3) {
-          // v2 kept hand-entered holdings. Convert them into opening buy
-          // trades so the ledger becomes the single source of truth.
-          const trades = [...(s.trades ?? [])];
-          const assetMeta: Record<string, SymbolMeta> = { ...(s.assetMeta ?? {}) };
           for (const h of s.holdings ?? []) {
             assetMeta[h.symbol] = {
               name: h.name,
@@ -549,22 +913,38 @@ export const useFinance = create<FinanceState>()(
               });
             }
           }
+        }
+
+        if (version < 4) {
+          const base = s.settings?.baseCurrency ?? "AUD";
+          trades = trades.map((t) => ({
+            ...t,
+            baseCurrency: base,
+            fxRate: t.fxRate ?? ((t.currency ?? base) === base ? 1 : undefined),
+          }));
+          assetMeta = { ...assetMeta };
           return {
             ...s,
-            assetMeta,
             trades,
+            assetMeta,
+            recurringRules: s.recurringRules ?? [],
+            watchlist: s.watchlist ?? [],
+            fxHistory: s.fxHistory ?? {},
+            rebasing: false,
+            settings: {
+              baseCurrency: base,
+              currencies: s.settings?.currencies ?? [...DEFAULT_CURRENCIES],
+              displayNative: s.settings?.displayNative ?? false,
+            },
             holdings: deriveHoldings(trades, s.holdings ?? [], assetMeta),
           } as FinanceState;
         }
-        return persisted as FinanceState;
+
+        return { ...s, trades, assetMeta } as FinanceState;
       },
       storage: createJSONStorage(() =>
         typeof window === "undefined"
-          ? {
-              getItem: () => null,
-              setItem: () => {},
-              removeItem: () => {},
-            }
+          ? { getItem: () => null, setItem: () => {}, removeItem: () => {} }
           : window.localStorage,
       ),
       skipHydration: true,
@@ -576,11 +956,13 @@ export function hydrateFinance() {
   if (typeof window === "undefined") return;
   void useFinance.persist.rehydrate()?.then?.(() => {
     const s = useFinance.getState();
-    if (s.holdings.length === 0) return;
-    // live prices + historical closes power current and past valuations
+    s.runRecurring();
+    void s.refreshFx();
+    void s.refreshWatchlist();
+    if (s.holdings.length === 0 && s.trades.length === 0) return;
     void s.refreshPrices();
     void s.refreshAllHistory();
-    void s.refreshFx();
+    void s.backfillFxRates();
+    void s.refreshFxHistory();
   });
 }
-
