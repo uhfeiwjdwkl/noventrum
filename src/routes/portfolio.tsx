@@ -8,7 +8,7 @@ import { useFinance } from "@/lib/finance/store";
 import { portfolioValue, portfolioCost, assetAllocation, fmtCurrency } from "@/lib/finance/data";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Briefcase } from "lucide-react";
-import { AddHoldingDialog } from "@/components/finance/AddDialogs";
+import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/portfolio")({
@@ -35,7 +35,7 @@ function PortfolioPage() {
     <AppShell
       title="Portfolio"
       subtitle="Positions, allocation and performance."
-      actions={<AddHoldingDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add holding</Button>} />}
+      actions={<BuySellDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Buy / Sell</Button>} />}
     >
       {holdings.length === 0 ? (
         <EmptyState

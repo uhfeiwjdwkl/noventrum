@@ -11,7 +11,6 @@ import { portfolioCost, portfolioValue, assetAllocation, realizedPL, fmtCurrency
 import type { Trade } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { LineChart as LineIcon, Trash2, RefreshCw, Pencil } from "lucide-react";
-import { AddHoldingDialog } from "@/components/finance/AddDialogs";
 import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -30,7 +29,6 @@ function InvestmentsPage() {
   const deleteHolding = useFinance((s) => s.deleteHolding);
   const deleteTrade = useFinance((s) => s.deleteTrade);
   const refreshPrices = useFinance((s) => s.refreshPrices);
-  const [addOpen, setAddOpen] = useState(false);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [editing, setEditing] = useState<Trade | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -63,7 +61,6 @@ function InvestmentsPage() {
             {refreshing ? "Syncing" : "Refresh prices"}
           </Button>
           <BuySellDialog open={tradeOpen} onOpenChange={setTradeOpen} trigger={<Button size="sm" variant="secondary">Buy / Sell</Button>} />
-          <AddHoldingDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add holding</Button>} />
         </>
       }
     >
