@@ -1,46 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
+import {
+  quoteWithFallback,
+  historyWithFallback,
+  fxRate,
+  fxRateAt,
+  searchYahoo,
+  type PriceSource,
+} from "@/lib/prices.server";
 
 /**
- * Live prices, historical closes, and FX rates via Yahoo Finance's
- * public chart endpoint. No auth required. Server-side only because
- * Yahoo blocks browser CORS.
+ * Live prices, historical closes, FX rates and ticker search.
+ * Source chain: Yahoo Finance -> Stooq -> Google Finance.
+ * Server-side only — these providers block browser CORS.
  */
-
-const CHART = "https://query1.finance.yahoo.com/v8/finance/chart/";
-
-async function fetchYahoo(symbol: string, range: string, interval: string) {
-  const url = `${CHART}${encodeURIComponent(symbol)}?range=${range}&interval=${interval}&includePrePost=false`;
-  const res = await fetch(url, {
-    headers: {
-      // Yahoo returns 401 without a UA.
-      "User-Agent":
-        "Mozilla/5.0 (compatible; Noventrum/1.0; +https://noventrum.kommenszlapf.website)",
-      Accept: "application/json",
-    },
-  });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`Yahoo ${res.status}: ${txt.slice(0, 120)}`);
-  }
-  return res.json() as Promise<{
-    chart: {
-      error?: { code: string; description: string } | null;
-      result?: Array<{
-        meta: {
-          symbol: string;
-          currency?: string;
-          regularMarketPrice?: number;
-          previousClose?: number;
-          longName?: string;
-          shortName?: string;
-          exchangeName?: string;
-        };
-        timestamp?: number[];
-        indicators: { quote: Array<{ close?: (number | null)[] }> };
-      }>;
-    };
-  }>;
-}
 
 export interface SymbolMatch {
   symbol: string;
@@ -49,48 +21,7 @@ export interface SymbolMatch {
   type: string;
 }
 
-/** Ticker autocomplete — searches stocks, ETFs, crypto, futures, FX. */
-export const searchSymbols = createServerFn({ method: "GET" })
-  .inputValidator((data: { query: string }) => data)
-  .handler(async ({ data }): Promise<SymbolMatch[]> => {
-    const q = data.query.trim();
-    if (q.length < 1) return [];
-    const url =
-      "https://query1.finance.yahoo.com/v1/finance/search?q=" +
-      encodeURIComponent(q) +
-      "&quotesCount=12&newsCount=0&listsCount=0&enableFuzzyQuery=true";
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; Noventrum/1.0; +https://noventrum.kommenszlapf.website)",
-        Accept: "application/json",
-      },
-    });
-    if (!res.ok) return [];
-    const j = (await res.json()) as {
-      quotes?: Array<{
-        symbol?: string;
-        shortname?: string;
-        longname?: string;
-        exchDisp?: string;
-        exchange?: string;
-        quoteType?: string;
-        typeDisp?: string;
-        isYahooFinance?: boolean;
-      }>;
-    };
-    return (j.quotes ?? [])
-      .filter((x) => x.symbol && x.isYahooFinance !== false)
-      .map((x) => ({
-        symbol: x.symbol!,
-        name: x.longname ?? x.shortname ?? x.symbol!,
-        exchange: x.exchDisp ?? x.exchange ?? "",
-        type: (x.typeDisp ?? x.quoteType ?? "").toString(),
-      }));
-  });
-
 export interface Quote {
-
   symbol: string;
   price: number;
   previousClose: number;
@@ -98,26 +29,30 @@ export interface Quote {
   name: string;
   exchange: string;
   dayChangePct: number;
+  source: PriceSource;
 }
+
+export interface HistoryPoint {
+  date: string;
+  close: number;
+}
+
+/** Ticker autocomplete — stocks, ETFs, crypto, futures, FX. */
+export const searchSymbols = createServerFn({ method: "GET" })
+  .inputValidator((data: { query: string }) => data)
+  .handler(async ({ data }): Promise<SymbolMatch[]> => {
+    const q = data.query.trim();
+    if (q.length < 1) return [];
+    try {
+      return await searchYahoo(q);
+    } catch {
+      return [];
+    }
+  });
 
 export const getQuote = createServerFn({ method: "GET" })
   .inputValidator((data: { symbol: string }) => data)
-  .handler(async ({ data }): Promise<Quote> => {
-    const j = await fetchYahoo(data.symbol, "5d", "1d");
-    const r = j.chart.result?.[0];
-    if (!r || j.chart.error) throw new Error(j.chart.error?.description ?? "No data");
-    const price = r.meta.regularMarketPrice ?? 0;
-    const prev = r.meta.previousClose ?? price;
-    return {
-      symbol: r.meta.symbol,
-      price,
-      previousClose: prev,
-      currency: r.meta.currency ?? "USD",
-      name: r.meta.longName ?? r.meta.shortName ?? r.meta.symbol,
-      exchange: r.meta.exchangeName ?? "",
-      dayChangePct: prev ? ((price - prev) / prev) * 100 : 0,
-    };
-  });
+  .handler(async ({ data }): Promise<Quote> => quoteWithFallback(data.symbol));
 
 export const getQuotes = createServerFn({ method: "POST" })
   .inputValidator((data: { symbols: string[] }) => data)
@@ -126,70 +61,70 @@ export const getQuotes = createServerFn({ method: "POST" })
     await Promise.all(
       data.symbols.map(async (sym) => {
         try {
-          const j = await fetchYahoo(sym, "5d", "1d");
-          const r = j.chart.result?.[0];
-          if (!r) return;
-          const price = r.meta.regularMarketPrice ?? 0;
-          const prev = r.meta.previousClose ?? price;
-          out[sym] = {
-            symbol: r.meta.symbol,
-            price,
-            previousClose: prev,
-            currency: r.meta.currency ?? "USD",
-            name: r.meta.longName ?? r.meta.shortName ?? sym,
-            exchange: r.meta.exchangeName ?? "",
-            dayChangePct: prev ? ((price - prev) / prev) * 100 : 0,
-          };
+          out[sym] = await quoteWithFallback(sym);
         } catch {
-          // swallow individual failures; other quotes may still succeed
+          // one failure must not sink the batch
         }
       }),
     );
     return out;
   });
 
-export interface HistoryPoint {
-  date: string;
-  close: number;
-}
-
 export const getHistory = createServerFn({ method: "GET" })
   .inputValidator((data: { symbol: string; range?: string; interval?: string }) => data)
-  .handler(async ({ data }): Promise<{ symbol: string; currency: string; points: HistoryPoint[] }> => {
-    const j = await fetchYahoo(data.symbol, data.range ?? "5y", data.interval ?? "1mo");
-    const r = j.chart.result?.[0];
-    if (!r) throw new Error("No data");
-    const ts = r.timestamp ?? [];
-    const closes = r.indicators.quote[0]?.close ?? [];
-    const points: HistoryPoint[] = [];
-    for (let i = 0; i < ts.length; i++) {
-      const c = closes[i];
-      if (typeof c === "number" && isFinite(c)) {
-        points.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), close: c });
-      }
-    }
-    return { symbol: r.meta.symbol, currency: r.meta.currency ?? "USD", points };
-  });
+  .handler(
+    async ({
+      data,
+    }): Promise<{ symbol: string; currency: string; points: HistoryPoint[]; source: PriceSource }> => {
+      const { currency, points, source } = await historyWithFallback(
+        data.symbol,
+        data.range ?? "5y",
+        data.interval ?? "1mo",
+      );
+      return { symbol: data.symbol.toUpperCase(), currency, points, source };
+    },
+  );
 
-/** FX via Yahoo pair symbol e.g. EURUSD=X returns EUR->USD */
+/** Live FX: map of currency -> value of 1 unit expressed in `base`. */
 export const getFxRates = createServerFn({ method: "POST" })
   .inputValidator((data: { base: string; symbols: string[] }) => data)
   .handler(async ({ data }): Promise<Record<string, number>> => {
     const out: Record<string, number> = {};
     await Promise.all(
       data.symbols.map(async (sym) => {
-        if (sym === data.base) {
-          out[sym] = 1;
-          return;
-        }
         try {
-          const pair = `${sym}${data.base}=X`;
-          const j = await fetchYahoo(pair, "5d", "1d");
-          const r = j.chart.result?.[0];
-          const p = r?.meta.regularMarketPrice;
-          if (typeof p === "number") out[sym] = p;
+          out[sym] = await fxRate(sym, data.base);
         } catch {
-          // ignore
+          // leave unset; caller falls back to 1
+        }
+      }),
+    );
+    return out;
+  });
+
+/** Historical FX for backdated trades and re-basing the whole ledger. */
+export const getFxRateAt = createServerFn({ method: "POST" })
+  .inputValidator((data: { from: string; to: string; date: string }) => data)
+  .handler(async ({ data }): Promise<number> => {
+    try {
+      return await fxRateAt(data.from, data.to, data.date);
+    } catch {
+      return 0;
+    }
+  });
+
+/** Batch historical FX — used when the default currency changes. */
+export const getFxRatesAt = createServerFn({ method: "POST" })
+  .inputValidator((data: { to: string; pairs: { from: string; date: string }[] }) => data)
+  .handler(async ({ data }): Promise<Record<string, number>> => {
+    const out: Record<string, number> = {};
+    await Promise.all(
+      data.pairs.map(async ({ from, date }) => {
+        const key = `${from}:${date}`;
+        try {
+          out[key] = await fxRateAt(from, data.to, date);
+        } catch {
+          // skip
         }
       }),
     );
