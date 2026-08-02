@@ -213,7 +213,7 @@ const empty = {
   incomeSources: [] as IncomeSource[],
   recurringRules: [] as RecurringRule[],
   watchlist: [] as WatchItem[],
-  fxRates: { AUD: 1, __base: "AUD" } as FxMap,
+  fxRates: { AUD: 1, __base: "AUD" } as unknown as FxMap,
   fxHistory: {} as FxHistory,
   assetMeta: {} as Record<string, SymbolMeta>,
   settings: {
@@ -755,7 +755,7 @@ export const useFinance = create<FinanceState>()(
         const symbols = Array.from(currencies);
         try {
           const rates = await getFxRates({ data: { base, symbols } });
-          set(() => ({ fxRates: { ...rates, [base]: 1, __base: base } as FxMap }));
+          set(() => ({ fxRates: { ...rates, [base]: 1, __base: base } as unknown as FxMap }));
           return Object.keys(rates).length;
         } catch {
           return 0;
@@ -857,7 +857,7 @@ export const useFinance = create<FinanceState>()(
               ? s.settings.currencies
               : [...s.settings.currencies, base],
           },
-          fxRates: { [base]: 1, __base: base } as FxMap,
+          fxRates: { [base]: 1, __base: base } as unknown as FxMap,
           fxHistory: {},
           trades: s.trades.map((t) => ({
             ...t,
