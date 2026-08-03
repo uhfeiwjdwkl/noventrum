@@ -70,8 +70,12 @@ function SettingsPage() {
         </div>
         <Card className="p-6 lg:col-span-2 gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><Label>Name</Label><Input defaultValue="" placeholder="Your name" className="mt-1.5" /></div>
-            <div><Label>Email</Label><Input type="email" defaultValue="" placeholder="you@example.com" className="mt-1.5" /></div>
+            {!user && (
+              <>
+                <div><Label>Name</Label><Input defaultValue="" placeholder="Your name" className="mt-1.5" /></div>
+                <div><Label>Email</Label><Input type="email" defaultValue="" placeholder="you@example.com" className="mt-1.5" /></div>
+              </>
+            )}
             <div><Label>Default currency</Label>
               <div className="mt-1.5">
                 <CurrencyPicker value={baseCurrency} onChange={changeBase} />
@@ -83,8 +87,21 @@ function SettingsPage() {
               </p>
             </div>
 
-            <div><Label>Timezone</Label><Input defaultValue="America/New_York" className="mt-1.5" /></div>
+            <div>
+              <Label>Timezone</Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          {user && (
+            <p className="text-xs text-muted-foreground">
+              Signed in as {user.email} — name and email are managed in your Kommenszlapf account.
+            </p>
+          )}
           <div><Button onClick={() => toast.success("Profile saved")}>Save changes</Button></div>
         </Card>
 
