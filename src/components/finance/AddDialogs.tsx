@@ -240,9 +240,35 @@ export function AddTransactionDialog({
           </div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional" /></div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} /> Recurring transaction</label>
+          {recurring && (
+            <div className="grid grid-cols-3 gap-3 rounded-md border border-border bg-muted/30 p-3">
+              <div>
+                <Label>Every</Label>
+                <Input className="mt-1.5" type="number" min={1} value={every} onChange={(e) => setEvery(e.target.value)} />
+              </div>
+              <div>
+                <Label>Unit</Label>
+                <Select value={unit} onValueChange={(v) => setUnit(v as RecurUnit)}>
+                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Days</SelectItem>
+                    <SelectItem value="week">Weeks</SelectItem>
+                    <SelectItem value="month">Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Ends (optional)</Label>
+                <Input className="mt-1.5" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
+              <p className="col-span-3 text-xs text-muted-foreground">
+                Entries are logged automatically until you cancel the rule. Cancelling keeps everything already logged.
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={accounts.length === 0}>Add transaction</Button>
+            <Button type="submit" disabled={accounts.length === 0}>{recurring ? "Start recurring" : "Add transaction"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
