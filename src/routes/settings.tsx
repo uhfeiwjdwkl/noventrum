@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
+import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -17,6 +17,23 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const resetAll = useFinance((s) => s.resetAll);
+  const baseCurrency = useFinance((s) => s.settings.baseCurrency);
+  const setBaseCurrency = useFinance((s) => s.setBaseCurrency);
+  const rebasing = useFinance((s) => s.rebasing);
+
+  async function changeBase(code: string) {
+    if (code === baseCurrency) return;
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Change your default currency to ${code}? Every trade will be re-valued using historical exchange rates. This can take a moment.`,
+      )
+    )
+      return;
+    const t = toast.loading(`Re-basing everything to ${code}…`);
+    await setBaseCurrency(code);
+    toast.success(`Default currency is now ${code}`, { id: t });
+  }
 
   function handleReset() {
     if (typeof window !== "undefined" && !window.confirm("Delete ALL accounts, transactions, holdings, budgets and goals? This cannot be undone.")) return;
