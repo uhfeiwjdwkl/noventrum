@@ -876,6 +876,7 @@ export const useFinance = create<FinanceState>()(
       setBaseCurrency: async (c) => {
         const base = c.trim().toUpperCase();
         if (!base || base === get().settings.baseCurrency) return;
+        setDisplayCurrency(base);
         set((s) => ({
           rebasing: true,
           settings: {
