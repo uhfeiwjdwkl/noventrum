@@ -68,6 +68,17 @@ export function BuySellDialog({
   const [currency, setCurrency] = useState(editTrade?.currency ?? useFinance.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
 
+  // Quantity currently held for this symbol, so "Sell all" needs no maths.
+  const trades = useFinance((s) => s.trades);
+  const heldShares = (() => {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym) return 0;
+    const q = trades
+      .filter((t) => t.symbol === sym && t.id !== editTrade?.id)
+      .reduce((sum, t) => sum + (t.side === "buy" ? t.shares : -t.shares), 0);
+    return Math.max(0, Math.round(q * 1e8) / 1e8);
+  })();
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!symbol.trim() || !shares || !price) return;
