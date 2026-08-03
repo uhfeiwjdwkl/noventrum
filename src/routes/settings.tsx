@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
+import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
@@ -17,6 +17,23 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const resetAll = useFinance((s) => s.resetAll);
+  const baseCurrency = useFinance((s) => s.settings.baseCurrency);
+  const setBaseCurrency = useFinance((s) => s.setBaseCurrency);
+  const rebasing = useFinance((s) => s.rebasing);
+
+  async function changeBase(code: string) {
+    if (code === baseCurrency) return;
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Change your default currency to ${code}? Every trade will be re-valued using historical exchange rates. This can take a moment.`,
+      )
+    )
+      return;
+    const t = toast.loading(`Re-basing everything to ${code}…`);
+    await setBaseCurrency(code);
+    toast.success(`Default currency is now ${code}`, { id: t });
+  }
 
   function handleReset() {
     if (typeof window !== "undefined" && !window.confirm("Delete ALL accounts, transactions, holdings, budgets and goals? This cannot be undone.")) return;
@@ -55,17 +72,17 @@ function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label>Name</Label><Input defaultValue="" placeholder="Your name" className="mt-1.5" /></div>
             <div><Label>Email</Label><Input type="email" defaultValue="" placeholder="you@example.com" className="mt-1.5" /></div>
-            <div><Label>Currency</Label>
-              <Select defaultValue="USD">
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD — US Dollar</SelectItem>
-                  <SelectItem value="EUR">EUR — Euro</SelectItem>
-                  <SelectItem value="GBP">GBP — British Pound</SelectItem>
-                  <SelectItem value="JPY">JPY — Japanese Yen</SelectItem>
-                </SelectContent>
-              </Select>
+            <div><Label>Default currency</Label>
+              <div className="mt-1.5">
+                <CurrencyPicker value={baseCurrency} onChange={changeBase} />
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {rebasing
+                  ? "Recalculating your ledger at historical rates…"
+                  : "All balances, holdings and returns are reported in this currency."}
+              </p>
             </div>
+
             <div><Label>Timezone</Label><Input defaultValue="America/New_York" className="mt-1.5" /></div>
           </div>
           <div><Button onClick={() => toast.success("Profile saved")}>Save changes</Button></div>

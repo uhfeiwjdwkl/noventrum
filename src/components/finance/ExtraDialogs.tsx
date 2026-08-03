@@ -23,10 +23,11 @@ import { useFinance } from "@/lib/finance/store";
 import type { AssetClass, Trade } from "@/lib/finance/data";
 import { getQuote } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
+import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { toast } from "sonner";
 
 const today = () => new Date().toISOString().slice(0, 10);
-const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "BRL"];
+
 
 /* ------------------------------- Buy / Sell -------------------------------- */
 
@@ -64,7 +65,7 @@ export function BuySellDialog({
   const [tax, setTax] = useState(editTrade?.tax ? String(editTrade.tax) : "");
   const [date, setDate] = useState(editTrade?.date ?? today());
   const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
-  const [currency, setCurrency] = useState(editTrade?.currency ?? "USD");
+  const [currency, setCurrency] = useState(editTrade?.currency ?? useFinance.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
 
   function submit(e: React.FormEvent) {
@@ -183,10 +184,7 @@ export function BuySellDialog({
             <div><Label>Date</Label><Input className="mt-1.5" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
+              <CurrencyPicker value={currency} onChange={setCurrency} className="mt-1.5" />
             </div>
             <div>
               <Label>Settle from</Label>
@@ -229,7 +227,7 @@ export function AddPropertyDialog({
   const [currentValue, setCurrentValue] = useState("");
   const [fees, setFees] = useState("");
   const [tax, setTax] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
   const [linkedMortgageAccountId, setLinked] = useState<string>("");
   const [notes, setNotes] = useState("");
 
@@ -276,7 +274,7 @@ export function AddPropertyDialog({
             <div><Label>Current value</Label><Input className="mt-1.5" type="number" step="0.01" value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} placeholder="Defaults to purchase price" /></div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              <CurrencyPicker value={currency} onChange={setCurrency} className="mt-1.5" />
             </div>
             <div>
               <Label>Link mortgage</Label>
@@ -318,7 +316,7 @@ export function AddPhysicalDialog({
   const [currentValue, setCurrentValue] = useState("");
   const [fees, setFees] = useState("");
   const [tax, setTax] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
   const [notes, setNotes] = useState("");
 
   function submit(e: React.FormEvent) {
@@ -372,7 +370,7 @@ export function AddPhysicalDialog({
             <div><Label>Current value</Label><Input className="mt-1.5" type="number" step="0.01" value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} /></div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              <CurrencyPicker value={currency} onChange={setCurrency} className="mt-1.5" />
             </div>
           </div>
           <div><Label>Notes</Label><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
@@ -404,7 +402,7 @@ export function AddDividendDialog({
   const [amount, setAmount] = useState("");
   const [tax, setTax] = useState("");
   const [accountId, setAccountId] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -443,7 +441,7 @@ export function AddDividendDialog({
             </div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              <CurrencyPicker value={currency} onChange={setCurrency} className="mt-1.5" />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -484,7 +482,7 @@ export function AddIncomeSourceDialog({
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"salary" | "rental" | "side" | "dividend" | "interest" | "other">("salary");
   const [monthly, setMonthly] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -523,7 +521,7 @@ export function AddIncomeSourceDialog({
             <div><Label>Monthly amount</Label><Input className="mt-1.5" type="number" step="0.01" value={monthly} onChange={(e) => setMonthly(e.target.value)} required /></div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}><SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger><SelectContent>{CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              <CurrencyPicker value={currency} onChange={setCurrency} className="mt-1.5" />
             </div>
           </div>
           <DialogFooter>
