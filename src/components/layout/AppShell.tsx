@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddMenu } from "@/components/finance/AddDialogs";
+import { NotificationsMenu } from "@/components/finance/Notifications";
 import { KommenszlapfAccountButton, KommenszlapfAccountDialog } from "@/components/auth/KommenszlapfAccount";
 
 
