@@ -55,17 +55,17 @@ function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label>Name</Label><Input defaultValue="" placeholder="Your name" className="mt-1.5" /></div>
             <div><Label>Email</Label><Input type="email" defaultValue="" placeholder="you@example.com" className="mt-1.5" /></div>
-            <div><Label>Currency</Label>
-              <Select defaultValue="USD">
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD — US Dollar</SelectItem>
-                  <SelectItem value="EUR">EUR — Euro</SelectItem>
-                  <SelectItem value="GBP">GBP — British Pound</SelectItem>
-                  <SelectItem value="JPY">JPY — Japanese Yen</SelectItem>
-                </SelectContent>
-              </Select>
+            <div><Label>Default currency</Label>
+              <div className="mt-1.5">
+                <CurrencyPicker value={baseCurrency} onChange={changeBase} />
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {rebasing
+                  ? "Recalculating your ledger at historical rates…"
+                  : "All balances, holdings and returns are reported in this currency."}
+              </p>
             </div>
+
             <div><Label>Timezone</Label><Input defaultValue="America/New_York" className="mt-1.5" /></div>
           </div>
           <div><Button onClick={() => toast.success("Profile saved")}>Save changes</Button></div>
