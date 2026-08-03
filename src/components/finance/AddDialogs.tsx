@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
+import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import type { AccountType, TxnKind } from "@/lib/finance/data";
 import { toast } from "sonner";
 
@@ -109,16 +110,7 @@ export function AddAccountDialog({
             </div>
             <div>
               <Label>Currency</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                  <SelectItem value="GBP">GBP</SelectItem>
-                  <SelectItem value="JPY">JPY</SelectItem>
-                  <SelectItem value="CAD">CAD</SelectItem>
-                </SelectContent>
-              </Select>
+              <CurrencyPicker value={currency} onChange={setCurrency} />
             </div>
           </div>
           <div><Label>Current balance</Label><Input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" /></div>

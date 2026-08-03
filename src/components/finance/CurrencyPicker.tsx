@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useFinance } from "@/lib/finance/store";
+import { useFinance, DEFAULT_CURRENCIES } from "@/lib/finance/store";
 import { toast } from "sonner";
 
 /** ISO 4217 code picker: shows saved codes + "Other..." to add any 3-letter code. */
