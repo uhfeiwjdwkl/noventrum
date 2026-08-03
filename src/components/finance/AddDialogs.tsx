@@ -67,7 +67,7 @@ export function AddAccountDialog({
   const [institution, setInstitution] = useState("");
   const [type, setType] = useState<AccountType>("checking");
   const [balance, setBalance] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

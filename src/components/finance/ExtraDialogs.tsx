@@ -65,7 +65,7 @@ export function BuySellDialog({
   const [tax, setTax] = useState(editTrade?.tax ? String(editTrade.tax) : "");
   const [date, setDate] = useState(editTrade?.date ?? today());
   const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
-  const [currency, setCurrency] = useState(editTrade?.currency ?? "USD");
+  const [currency, setCurrency] = useState(editTrade?.currency ?? useFinance.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
 
   function submit(e: React.FormEvent) {
@@ -227,7 +227,7 @@ export function AddPropertyDialog({
   const [currentValue, setCurrentValue] = useState("");
   const [fees, setFees] = useState("");
   const [tax, setTax] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
   const [linkedMortgageAccountId, setLinked] = useState<string>("");
   const [notes, setNotes] = useState("");
 
@@ -316,7 +316,7 @@ export function AddPhysicalDialog({
   const [currentValue, setCurrentValue] = useState("");
   const [fees, setFees] = useState("");
   const [tax, setTax] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
   const [notes, setNotes] = useState("");
 
   function submit(e: React.FormEvent) {
@@ -402,7 +402,7 @@ export function AddDividendDialog({
   const [amount, setAmount] = useState("");
   const [tax, setTax] = useState("");
   const [accountId, setAccountId] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -482,7 +482,7 @@ export function AddIncomeSourceDialog({
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"salary" | "rental" | "side" | "dividend" | "interest" | "other">("salary");
   const [monthly, setMonthly] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
