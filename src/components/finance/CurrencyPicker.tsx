@@ -22,7 +22,7 @@ export function CurrencyPicker({
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState("");
 
-  const list = currencies.includes(value) || !value ? currencies : [value, ...currencies];
+  const list = Array.from(new Set([...(value ? [value] : []), ...currencies, ...DEFAULT_CURRENCIES]));
 
   return (
     <>
