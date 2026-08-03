@@ -175,7 +175,21 @@ export function BuySellDialog({
           </div>
           <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Apple Inc." className="mt-1.5" /></div>
           <div className="grid grid-cols-4 gap-3">
-            <div><Label>Quantity</Label><Input className="mt-1.5" type="number" step="0.0001" value={shares} onChange={(e) => setShares(e.target.value)} required /></div>
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Quantity</Label>
+                {side === "sell" && heldShares > 0 && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-primary hover:underline"
+                    onClick={() => setShares(String(heldShares))}
+                  >
+                    Sell all ({heldShares})
+                  </button>
+                )}
+              </div>
+              <Input className="mt-1.5" type="number" step="0.0001" value={shares} onChange={(e) => setShares(e.target.value)} required />
+            </div>
             <div><Label>Price</Label><Input className="mt-1.5" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /></div>
             <div><Label>Fees</Label><Input className="mt-1.5" type="number" step="0.01" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="0.00" /></div>
             <div><Label>Tax</Label><Input className="mt-1.5" type="number" step="0.01" value={tax} onChange={(e) => setTax(e.target.value)} placeholder="0.00" /></div>
