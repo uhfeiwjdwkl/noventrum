@@ -142,6 +142,8 @@ export function AddTransactionDialog({
   const setOpen = onOpenChange ?? setInternal;
   const accounts = useFinance((s) => s.accounts);
   const addTransaction = useFinance((s) => s.addTransaction);
+  const addRecurringRule = useFinance((s) => s.addRecurringRule);
+  const runRecurring = useFinance((s) => s.runRecurring);
 
   const [merchant, setMerchant] = useState("");
   const [category, setCategory] = useState("");
@@ -151,6 +153,9 @@ export function AddTransactionDialog({
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
   const [recurring, setRecurring] = useState(false);
+  const [every, setEvery] = useState("1");
+  const [unit, setUnit] = useState<RecurUnit>("month");
+  const [endDate, setEndDate] = useState("");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -161,18 +166,32 @@ export function AddTransactionDialog({
     }
     const raw = Math.abs(Number(amount) || 0);
     const signed = kind === "income" ? raw : -raw;
-    addTransaction({
-      date,
+    const template = {
       accountId: accountId || (accounts[0]?.id ?? ""),
       amount: signed,
       kind,
       category: category.trim() || (kind === "income" ? "Other income" : "Uncategorized"),
       merchant: merchant.trim(),
       notes: notes.trim() || undefined,
-      recurring,
-    });
-    toast.success("Transaction added");
-    setMerchant(""); setCategory(""); setAmount(""); setNotes(""); setRecurring(false);
+    };
+    if (recurring) {
+      const n = Math.max(1, Number(every) || 1);
+      addRecurringRule({
+        every: n,
+        unit,
+        startDate: date,
+        endDate: endDate || undefined,
+        template,
+      });
+      const made = runRecurring();
+      toast.success(
+        `Repeating every ${n} ${unit}${n === 1 ? "" : "s"} — ${made} entr${made === 1 ? "y" : "ies"} logged so far`,
+      );
+    } else {
+      addTransaction({ date, ...template, recurring: false });
+      toast.success("Transaction added");
+    }
+    setMerchant(""); setCategory(""); setAmount(""); setNotes(""); setRecurring(false); setEndDate("");
     setOpen(false);
   }
 
