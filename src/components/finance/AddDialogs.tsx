@@ -43,7 +43,7 @@ import {
 import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
-import type { AccountType, TxnKind } from "@/lib/finance/data";
+import type { AccountType, TxnKind, RecurUnit } from "@/lib/finance/data";
 import { toast } from "sonner";
 
 const today = () => new Date().toISOString().slice(0, 10);
