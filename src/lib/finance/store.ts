@@ -17,7 +17,7 @@ import type {
   FxHistory,
   FxMap,
 } from "./data";
-import { deriveHoldings, dueDates, type SymbolMeta } from "./data";
+import { deriveHoldings, dueDates, setDisplayCurrency, type SymbolMeta } from "./data";
 import {
   getQuotes,
   getHistory,
