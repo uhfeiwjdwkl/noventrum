@@ -181,9 +181,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Notifications">
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationsMenu />
             <AddMenu />
             <KommenszlapfAccountButton onOpen={() => setAccountOpen(true)} />
           </div>
