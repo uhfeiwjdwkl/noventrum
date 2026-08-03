@@ -16,7 +16,7 @@ import {
   Moon,
   Sun,
   Search,
-  Bell,
+  
   RefreshCw,
   ExternalLink,
   Home,
