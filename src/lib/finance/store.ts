@@ -985,6 +985,7 @@ export function hydrateFinance() {
   if (typeof window === "undefined") return;
   void useFinance.persist.rehydrate()?.then?.(() => {
     const s = useFinance.getState();
+    setDisplayCurrency(s.settings.baseCurrency);
     s.runRecurring();
     void s.refreshFx();
     void s.refreshWatchlist();
