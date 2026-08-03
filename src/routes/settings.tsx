@@ -139,17 +139,17 @@ function SettingsPage() {
         </div>
         <Card className="p-6 lg:col-span-2 gap-4">
           {[
-            ["Weekly summary email", "A recap of your finances every Monday"],
-            ["Budget alerts", "Notify me when I'm nearing a limit"],
-            ["Large transactions", "Alert for transactions over $500"],
-            ["Investment updates", "Daily market close notifications"],
-          ].map(([t, d]) => (
-            <div key={t} className="flex items-center justify-between gap-4">
+            ["Weekly summary email", "A recap of your finances every Monday", false],
+            ["Budget alerts", "Notify me when I'm nearing a limit", true],
+            ["Large transactions", "Alert for transactions over $500", true],
+            ["Investment updates", "Daily market close notifications", true],
+          ].map(([t, d, on]) => (
+            <div key={t as string} className="flex items-center justify-between gap-4">
               <div>
                 <div className="font-medium">{t}</div>
                 <div className="text-sm text-muted-foreground">{d}</div>
               </div>
-              <Switch defaultChecked />
+              <Switch defaultChecked={on as boolean} />
             </div>
           ))}
         </Card>
