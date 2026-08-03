@@ -16,7 +16,7 @@ import {
   Moon,
   Sun,
   Search,
-  Bell,
+  
   RefreshCw,
   ExternalLink,
   Home,
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddMenu } from "@/components/finance/AddDialogs";
+import { NotificationsMenu } from "@/components/finance/Notifications";
 import { KommenszlapfAccountButton, KommenszlapfAccountDialog } from "@/components/auth/KommenszlapfAccount";
 
 
@@ -181,9 +182,7 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Notifications">
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationsMenu />
             <AddMenu />
             <KommenszlapfAccountButton onOpen={() => setAccountOpen(true)} />
           </div>

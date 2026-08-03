@@ -40,10 +40,10 @@ import {
   Briefcase,
   ArrowLeftRight,
 } from "lucide-react";
-import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog } from "./ExtraDialogs";
+import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog, ExchangeDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
-import type { AccountType, TxnKind } from "@/lib/finance/data";
+import type { AccountType, TxnKind, RecurUnit } from "@/lib/finance/data";
 import { toast } from "sonner";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -142,6 +142,8 @@ export function AddTransactionDialog({
   const setOpen = onOpenChange ?? setInternal;
   const accounts = useFinance((s) => s.accounts);
   const addTransaction = useFinance((s) => s.addTransaction);
+  const addRecurringRule = useFinance((s) => s.addRecurringRule);
+  const runRecurring = useFinance((s) => s.runRecurring);
 
   const [merchant, setMerchant] = useState("");
   const [category, setCategory] = useState("");
@@ -151,6 +153,9 @@ export function AddTransactionDialog({
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
   const [recurring, setRecurring] = useState(false);
+  const [every, setEvery] = useState("1");
+  const [unit, setUnit] = useState<RecurUnit>("month");
+  const [endDate, setEndDate] = useState("");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -161,18 +166,32 @@ export function AddTransactionDialog({
     }
     const raw = Math.abs(Number(amount) || 0);
     const signed = kind === "income" ? raw : -raw;
-    addTransaction({
-      date,
+    const template = {
       accountId: accountId || (accounts[0]?.id ?? ""),
       amount: signed,
       kind,
       category: category.trim() || (kind === "income" ? "Other income" : "Uncategorized"),
       merchant: merchant.trim(),
       notes: notes.trim() || undefined,
-      recurring,
-    });
-    toast.success("Transaction added");
-    setMerchant(""); setCategory(""); setAmount(""); setNotes(""); setRecurring(false);
+    };
+    if (recurring) {
+      const n = Math.max(1, Number(every) || 1);
+      addRecurringRule({
+        every: n,
+        unit,
+        startDate: date,
+        endDate: endDate || undefined,
+        template,
+      });
+      const made = runRecurring();
+      toast.success(
+        `Repeating every ${n} ${unit}${n === 1 ? "" : "s"} — ${made} entr${made === 1 ? "y" : "ies"} logged so far`,
+      );
+    } else {
+      addTransaction({ date, ...template, recurring: false });
+      toast.success("Transaction added");
+    }
+    setMerchant(""); setCategory(""); setAmount(""); setNotes(""); setRecurring(false); setEndDate("");
     setOpen(false);
   }
 
@@ -221,9 +240,35 @@ export function AddTransactionDialog({
           </div>
           <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional" /></div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={recurring} onChange={(e) => setRecurring(e.target.checked)} /> Recurring transaction</label>
+          {recurring && (
+            <div className="grid grid-cols-3 gap-3 rounded-md border border-border bg-muted/30 p-3">
+              <div>
+                <Label>Every</Label>
+                <Input className="mt-1.5" type="number" min={1} value={every} onChange={(e) => setEvery(e.target.value)} />
+              </div>
+              <div>
+                <Label>Unit</Label>
+                <Select value={unit} onValueChange={(v) => setUnit(v as RecurUnit)}>
+                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">Days</SelectItem>
+                    <SelectItem value="week">Weeks</SelectItem>
+                    <SelectItem value="month">Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Ends (optional)</Label>
+                <Input className="mt-1.5" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
+              <p className="col-span-3 text-xs text-muted-foreground">
+                Entries are logged automatically until you cancel the rule. Cancelling keeps everything already logged.
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={accounts.length === 0}>Add transaction</Button>
+            <Button type="submit" disabled={accounts.length === 0}>{recurring ? "Start recurring" : "Add transaction"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -349,7 +394,7 @@ export function AddGoalDialog({
 
 /* ------------------------------- AddMenu ------------------------------- */
 
-type MenuKind = "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
+type MenuKind = "exchange" | "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
 
 export function AddMenu() {
   const [open, setOpen] = useState<MenuKind | null>(null);
@@ -363,6 +408,7 @@ export function AddMenu() {
           <DropdownMenuLabel>Log a transaction</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setOpen("transaction")}><Receipt className="h-4 w-4 mr-2" />Income / Expense</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("trade")}><ArrowLeftRight className="h-4 w-4 mr-2" />Buy / Sell asset</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("exchange")}><ArrowLeftRight className="h-4 w-4 mr-2" />Currency exchange</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("dividend")}><Coins className="h-4 w-4 mr-2" />Dividend</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Set up</DropdownMenuLabel>
@@ -377,6 +423,7 @@ export function AddMenu() {
       <AddAccountDialog open={open === "account"} onOpenChange={(o) => setOpen(o ? "account" : null)} />
       <AddTransactionDialog open={open === "transaction"} onOpenChange={(o) => setOpen(o ? "transaction" : null)} />
       <BuySellDialog open={open === "trade"} onOpenChange={(o) => setOpen(o ? "trade" : null)} />
+      <ExchangeDialog open={open === "exchange"} onOpenChange={(o) => setOpen(o ? "exchange" : null)} />
       <AddDividendDialog open={open === "dividend"} onOpenChange={(o) => setOpen(o ? "dividend" : null)} />
       <AddPropertyDialog open={open === "property"} onOpenChange={(o) => setOpen(o ? "property" : null)} />
       <AddPhysicalDialog open={open === "physical"} onOpenChange={(o) => setOpen(o ? "physical" : null)} />

@@ -17,7 +17,7 @@ import type {
   FxHistory,
   FxMap,
 } from "./data";
-import { deriveHoldings, dueDates, type SymbolMeta } from "./data";
+import { deriveHoldings, dueDates, setDisplayCurrency, type SymbolMeta } from "./data";
 import {
   getQuotes,
   getHistory,
@@ -876,6 +876,7 @@ export const useFinance = create<FinanceState>()(
       setBaseCurrency: async (c) => {
         const base = c.trim().toUpperCase();
         if (!base || base === get().settings.baseCurrency) return;
+        setDisplayCurrency(base);
         set((s) => ({
           rebasing: true,
           settings: {
@@ -984,6 +985,7 @@ export function hydrateFinance() {
   if (typeof window === "undefined") return;
   void useFinance.persist.rehydrate()?.then?.(() => {
     const s = useFinance.getState();
+    setDisplayCurrency(s.settings.baseCurrency);
     s.runRecurring();
     void s.refreshFx();
     void s.refreshWatchlist();

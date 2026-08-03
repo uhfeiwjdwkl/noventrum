@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
 import type { AssetClass, Trade } from "@/lib/finance/data";
-import { getQuote } from "@/lib/prices.functions";
+import { getQuote, getFxRateAt } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { toast } from "sonner";
@@ -67,6 +67,17 @@ export function BuySellDialog({
   const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
   const [currency, setCurrency] = useState(editTrade?.currency ?? useFinance.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
+
+  // Quantity currently held for this symbol, so "Sell all" needs no maths.
+  const trades = useFinance((s) => s.trades);
+  const heldShares = (() => {
+    const sym = symbol.trim().toUpperCase();
+    if (!sym) return 0;
+    const q = trades
+      .filter((t) => t.symbol === sym && t.id !== editTrade?.id)
+      .reduce((sum, t) => sum + (t.side === "buy" ? t.shares : -t.shares), 0);
+    return Math.max(0, Math.round(q * 1e8) / 1e8);
+  })();
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -175,7 +186,21 @@ export function BuySellDialog({
           </div>
           <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Apple Inc." className="mt-1.5" /></div>
           <div className="grid grid-cols-4 gap-3">
-            <div><Label>Quantity</Label><Input className="mt-1.5" type="number" step="0.0001" value={shares} onChange={(e) => setShares(e.target.value)} required /></div>
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Quantity</Label>
+                {side === "sell" && heldShares > 0 && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-primary hover:underline"
+                    onClick={() => setShares(String(heldShares))}
+                  >
+                    Sell all ({heldShares})
+                  </button>
+                )}
+              </div>
+              <Input className="mt-1.5" type="number" step="0.0001" value={shares} onChange={(e) => setShares(e.target.value)} required />
+            </div>
             <div><Label>Price</Label><Input className="mt-1.5" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /></div>
             <div><Label>Fees</Label><Input className="mt-1.5" type="number" step="0.01" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="0.00" /></div>
             <div><Label>Tax</Label><Input className="mt-1.5" type="number" step="0.01" value={tax} onChange={(e) => setTax(e.target.value)} placeholder="0.00" /></div>
@@ -529,6 +554,122 @@ export function AddIncomeSourceDialog({
             <Button type="submit">Add source</Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ---------------------------- Currency exchange ---------------------------- */
+
+export function ExchangeDialog({
+  trigger, open, onOpenChange,
+}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void }) {
+  const [internal, setInternal] = useState(false);
+  const isOpen = open ?? internal;
+  const setOpen = onOpenChange ?? setInternal;
+  const accounts = useFinance((s) => s.accounts);
+  const recordExchange = useFinance((s) => s.recordExchange);
+  const cash = accounts.filter((a) => ["checking", "savings", "cash", "brokerage"].includes(a.type));
+
+  const [fromId, setFromId] = useState("");
+  const [toId, setToId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [rate, setRate] = useState("");
+  const [fees, setFees] = useState("");
+  const [date, setDate] = useState(today());
+  const [loading, setLoading] = useState(false);
+
+  const from = cash.find((a) => a.id === fromId);
+  const to = cash.find((a) => a.id === toId);
+  const received = (Number(amount) - (Number(fees) || 0)) * (Number(rate) || 0);
+
+  async function fetchRate() {
+    if (!from || !to) return;
+    setLoading(true);
+    try {
+      const r = await getFxRateAt({ data: { from: from.currency ?? "AUD", to: to.currency ?? "AUD", date } });
+      if (r > 0) setRate(String(Number(r.toFixed(6))));
+      else toast.error("No rate found for that date");
+    } catch {
+      toast.error("Couldn't fetch that rate");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!from || !to || from.id === to.id) return toast.error("Pick two different accounts");
+    if (!amount || !rate) return toast.error("Enter an amount and rate");
+    recordExchange({
+      date,
+      fromAccountId: from.id,
+      toAccountId: to.id,
+      amount: Number(amount),
+      rate: Number(rate),
+      fees: Number(fees) || 0,
+    });
+    toast.success(`Exchanged ${from.currency} → ${to.currency}`);
+    setAmount(""); setRate(""); setFees("");
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Exchange currency</DialogTitle>
+          <DialogDescription>
+            Move money between two accounts in different currencies. The position is held in the
+            destination currency and valued in your default currency everywhere else.
+          </DialogDescription>
+        </DialogHeader>
+        {cash.length < 2 ? (
+          <p className="text-sm text-muted-foreground">
+            Add at least two accounts (one per currency) before making an exchange.
+          </p>
+        ) : (
+          <form onSubmit={submit} className="grid gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>From account</Label>
+                <Select value={fromId} onValueChange={setFromId}>
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{cash.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>To account</Label>
+                <Select value={toId} onValueChange={setToId}>
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{cash.filter((a) => a.id !== fromId).map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              <div><Label>Amount {from ? `(${from.currency})` : ""}</Label><Input className="mt-1.5" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required /></div>
+              <div><Label>Fees</Label><Input className="mt-1.5" type="number" step="0.01" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="0.00" /></div>
+              <div><Label>Rate</Label><Input className="mt-1.5" type="number" step="0.000001" value={rate} onChange={(e) => setRate(e.target.value)} required /></div>
+              <div><Label>Date</Label><Input className="mt-1.5" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+              <span className="text-muted-foreground">
+                {from && to ? `1 ${from.currency} = ${rate || "?"} ${to.currency}` : "Pick accounts to fetch a live rate"}
+              </span>
+              <div className="flex items-center gap-3">
+                {to && <span className="num font-medium">{received > 0 ? `${received.toFixed(2)} ${to.currency}` : "—"}</span>}
+                <Button type="button" size="sm" variant="outline" onClick={fetchRate} disabled={!from || !to || loading}>
+                  {loading ? "Fetching…" : "Live rate"}
+                </Button>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit">Record exchange</Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
