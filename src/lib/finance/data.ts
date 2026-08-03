@@ -547,11 +547,17 @@ export function assetAllocation(
   return Array.from(map.entries()).map(([k, v]) => ({ name: k, value: Math.round(v) }));
 }
 
+/** Currency used when a caller doesn't pass one — kept in sync with settings. */
+let displayCurrency = "AUD";
+export function setDisplayCurrency(code: string) {
+  if (code) displayCurrency = code;
+}
+
 export function fmtCurrency(
   n: number,
   opts: { compact?: boolean; currency?: string } = {},
 ) {
-  const currency = opts.currency ?? "USD";
+  const currency = opts.currency ?? displayCurrency;
   const safe = (c: string) => {
     try {
       new Intl.NumberFormat("en-US", { style: "currency", currency: c }).format(1);
