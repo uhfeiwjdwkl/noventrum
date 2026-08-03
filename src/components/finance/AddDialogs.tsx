@@ -40,7 +40,7 @@ import {
   Briefcase,
   ArrowLeftRight,
 } from "lucide-react";
-import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog } from "./ExtraDialogs";
+import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog, ExchangeDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import type { AccountType, TxnKind, RecurUnit } from "@/lib/finance/data";
@@ -394,7 +394,7 @@ export function AddGoalDialog({
 
 /* ------------------------------- AddMenu ------------------------------- */
 
-type MenuKind = "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
+type MenuKind = "exchange" | "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
 
 export function AddMenu() {
   const [open, setOpen] = useState<MenuKind | null>(null);
@@ -408,6 +408,7 @@ export function AddMenu() {
           <DropdownMenuLabel>Log a transaction</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setOpen("transaction")}><Receipt className="h-4 w-4 mr-2" />Income / Expense</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("trade")}><ArrowLeftRight className="h-4 w-4 mr-2" />Buy / Sell asset</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("exchange")}><ArrowLeftRight className="h-4 w-4 mr-2" />Currency exchange</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("dividend")}><Coins className="h-4 w-4 mr-2" />Dividend</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Set up</DropdownMenuLabel>
@@ -422,6 +423,7 @@ export function AddMenu() {
       <AddAccountDialog open={open === "account"} onOpenChange={(o) => setOpen(o ? "account" : null)} />
       <AddTransactionDialog open={open === "transaction"} onOpenChange={(o) => setOpen(o ? "transaction" : null)} />
       <BuySellDialog open={open === "trade"} onOpenChange={(o) => setOpen(o ? "trade" : null)} />
+      <ExchangeDialog open={open === "exchange"} onOpenChange={(o) => setOpen(o ? "exchange" : null)} />
       <AddDividendDialog open={open === "dividend"} onOpenChange={(o) => setOpen(o ? "dividend" : null)} />
       <AddPropertyDialog open={open === "property"} onOpenChange={(o) => setOpen(o ? "property" : null)} />
       <AddPhysicalDialog open={open === "physical"} onOpenChange={(o) => setOpen(o ? "physical" : null)} />
