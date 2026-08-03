@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/card";
@@ -6,12 +7,33 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
+import { useKommenszlapfAuth } from "@/lib/kommenszlapfAuth";
 import { toast } from "sonner";
 
+const TIMEZONES = [
+  "UTC", "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane", "Australia/Adelaide",
+  "Australia/Perth", "Pacific/Auckland", "Asia/Tokyo", "Asia/Singapore", "Asia/Hong_Kong",
+  "Asia/Shanghai", "Asia/Kolkata", "Asia/Dubai", "Europe/London", "Europe/Dublin",
+  "Europe/Paris", "Europe/Berlin", "Europe/Madrid", "Europe/Rome", "Europe/Zurich",
+  "Europe/Stockholm", "Europe/Moscow", "Africa/Johannesburg", "America/Sao_Paulo",
+  "America/New_York", "America/Toronto", "America/Chicago", "America/Denver",
+  "America/Los_Angeles", "America/Vancouver", "Pacific/Honolulu",
+];
+
 export const Route = createFileRoute("/settings")({
-  head: () => ({ meta: [{ title: "Settings — Noventrum" }] }),
+  head: () => ({
+    meta: [
+      { title: "Settings — Noventrum" },
+      { name: "description", content: "Set your default currency, timezone, notification preferences and manage your Noventrum data." },
+      { property: "og:title", content: "Settings — Noventrum" },
+      { property: "og:description", content: "Default currency, timezone, alerts and data controls for your Noventrum finances." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: SettingsPage,
 });
 
@@ -20,6 +42,10 @@ function SettingsPage() {
   const baseCurrency = useFinance((s) => s.settings.baseCurrency);
   const setBaseCurrency = useFinance((s) => s.setBaseCurrency);
   const rebasing = useFinance((s) => s.rebasing);
+  const { user } = useKommenszlapfAuth();
+  const [timezone, setTimezone] = useState(
+    typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC",
+  );
 
   async function changeBase(code: string) {
     if (code === baseCurrency) return;
