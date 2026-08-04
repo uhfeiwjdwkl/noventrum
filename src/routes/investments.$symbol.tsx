@@ -73,8 +73,9 @@ function HoldingPage() {
         <Card className="p-5">
           <div className="mb-4 font-semibold">Position details</div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div><dt className="text-muted-foreground">Shares</dt><dd className="num font-medium">{h.shares}</dd></div>
-            <div><dt className="text-muted-foreground">Avg cost</dt><dd className="num font-medium">{fmtCurrency(h.avgCost)}</dd></div>
+            <div><dt className="text-muted-foreground">Shares</dt><dd className="num font-medium">{shares}</dd></div>
+            <div><dt className="text-muted-foreground">Avg cost</dt><dd className="num font-medium">{fmtCurrency(h?.avgCost ?? 0)}</dd></div>
+
             <div><dt className="text-muted-foreground">Market value</dt><dd className="num font-medium">{fmtCurrency(val)}</dd></div>
             <div><dt className="text-muted-foreground">Cost basis</dt><dd className="num font-medium">{fmtCurrency(cost)}</dd></div>
             <div><dt className="text-muted-foreground">Unrealized P/L</dt><dd className={"num font-medium " + (pl >= 0 ? "text-success" : "text-destructive")}>{fmtCurrency(pl)}</dd></div>
