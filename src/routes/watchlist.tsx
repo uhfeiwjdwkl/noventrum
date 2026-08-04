@@ -119,14 +119,15 @@ function WatchlistPage() {
       }
     >
       {watchlist.length === 0 ? (
-        <EmptyState
-          icon={<CandlestickChart className="h-6 w-6" />}
-          title="Your watchlist is empty"
-          description="Add a ticker to follow its live price and full history — no trade required."
-          action={{ label: "Add ticker", onClick: () => document.querySelector<HTMLButtonElement>("[data-add-ticker]")?.click() }}
-        >
-          <div className="mt-4"><AddTickerDialog /></div>
-        </EmptyState>
+        <div className="grid place-items-center gap-4">
+          <EmptyState
+            icon={<CandlestickChart className="h-6 w-6" />}
+            title="Your watchlist is empty"
+            description="Add a ticker to follow its live price and full history — no trade required."
+          />
+          <AddTickerDialog />
+        </div>
+
       ) : (
         <>
           {active && (
