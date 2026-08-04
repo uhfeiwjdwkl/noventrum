@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -17,7 +18,6 @@ import { Route as PropertyRouteImport } from './routes/property'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as OtherAssetsRouteImport } from './routes/other-assets'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
-import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as InvestmentsRouteImport } from './routes/investments'
 import { Route as IncomeRouteImport } from './routes/income'
 import { Route as GuideRouteImport } from './routes/guide'
@@ -30,6 +30,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestmentsSymbolRouteImport } from './routes/investments.$symbol'
 import { Route as AuthConfirmedRouteImport } from './routes/auth.confirmed'
 
+const WatchlistRoute = WatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -68,11 +73,6 @@ const OtherAssetsRoute = OtherAssetsRouteImport.update({
 const NetWorthRoute = NetWorthRouteImport.update({
   id: '/net-worth',
   path: '/net-worth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MarketsRoute = MarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvestmentsRoute = InvestmentsRouteImport.update({
@@ -141,7 +141,6 @@ export interface FileRoutesByFullPath {
   '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
-  '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
@@ -150,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/watchlist': typeof WatchlistRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
@@ -163,7 +163,6 @@ export interface FileRoutesByTo {
   '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
-  '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
@@ -172,6 +171,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/watchlist': typeof WatchlistRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
@@ -186,7 +186,6 @@ export interface FileRoutesById {
   '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
-  '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
@@ -195,6 +194,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/watchlist': typeof WatchlistRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
@@ -210,7 +210,6 @@ export interface FileRouteTypes {
     | '/guide'
     | '/income'
     | '/investments'
-    | '/markets'
     | '/net-worth'
     | '/other-assets'
     | '/portfolio'
@@ -219,6 +218,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/watchlist'
     | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesByTo: FileRoutesByTo
@@ -232,7 +232,6 @@ export interface FileRouteTypes {
     | '/guide'
     | '/income'
     | '/investments'
-    | '/markets'
     | '/net-worth'
     | '/other-assets'
     | '/portfolio'
@@ -241,6 +240,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/watchlist'
     | '/auth/confirmed'
     | '/investments/$symbol'
   id:
@@ -254,7 +254,6 @@ export interface FileRouteTypes {
     | '/guide'
     | '/income'
     | '/investments'
-    | '/markets'
     | '/net-worth'
     | '/other-assets'
     | '/portfolio'
@@ -263,6 +262,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/watchlist'
     | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesById: FileRoutesById
@@ -277,7 +277,6 @@ export interface RootRouteChildren {
   GuideRoute: typeof GuideRoute
   IncomeRoute: typeof IncomeRoute
   InvestmentsRoute: typeof InvestmentsRouteWithChildren
-  MarketsRoute: typeof MarketsRoute
   NetWorthRoute: typeof NetWorthRoute
   OtherAssetsRoute: typeof OtherAssetsRoute
   PortfolioRoute: typeof PortfolioRoute
@@ -286,11 +285,19 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
+  WatchlistRoute: typeof WatchlistRoute
   AuthConfirmedRoute: typeof AuthConfirmedRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/watchlist': {
+      id: '/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof WatchlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transactions': {
       id: '/transactions'
       path: '/transactions'
@@ -345,13 +352,6 @@ declare module '@tanstack/react-router' {
       path: '/net-worth'
       fullPath: '/net-worth'
       preLoaderRoute: typeof NetWorthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/markets': {
-      id: '/markets'
-      path: '/markets'
-      fullPath: '/markets'
-      preLoaderRoute: typeof MarketsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/investments': {
@@ -456,7 +456,6 @@ const rootRouteChildren: RootRouteChildren = {
   GuideRoute: GuideRoute,
   IncomeRoute: IncomeRoute,
   InvestmentsRoute: InvestmentsRouteWithChildren,
-  MarketsRoute: MarketsRoute,
   NetWorthRoute: NetWorthRoute,
   OtherAssetsRoute: OtherAssetsRoute,
   PortfolioRoute: PortfolioRoute,
@@ -465,6 +464,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
+  WatchlistRoute: WatchlistRoute,
   AuthConfirmedRoute: AuthConfirmedRoute,
 }
 export const routeTree = rootRouteImport
