@@ -43,7 +43,7 @@ const NAV = [
   { to: "/dividends", label: "Dividends", icon: Coins },
   { to: "/property", label: "Property", icon: Home },
   { to: "/other-assets", label: "Other Assets", icon: Package },
-  { to: "/markets", label: "Markets", icon: CandlestickChart },
+  { to: "/watchlist", label: "Watchlist", icon: CandlestickChart },
   { to: "/budget", label: "Budget", icon: PiggyBank },
   { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/goals", label: "Goals", icon: Target },
