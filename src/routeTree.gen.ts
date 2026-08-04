@@ -18,7 +18,6 @@ import { Route as PropertyRouteImport } from './routes/property'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as OtherAssetsRouteImport } from './routes/other-assets'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
-import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as InvestmentsRouteImport } from './routes/investments'
 import { Route as IncomeRouteImport } from './routes/income'
 import { Route as GuideRouteImport } from './routes/guide'
@@ -74,11 +73,6 @@ const OtherAssetsRoute = OtherAssetsRouteImport.update({
 const NetWorthRoute = NetWorthRouteImport.update({
   id: '/net-worth',
   path: '/net-worth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MarketsRoute = MarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvestmentsRoute = InvestmentsRouteImport.update({
@@ -147,7 +141,6 @@ export interface FileRoutesByFullPath {
   '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
-  '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
@@ -170,7 +163,6 @@ export interface FileRoutesByTo {
   '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
-  '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
@@ -194,7 +186,6 @@ export interface FileRoutesById {
   '/guide': typeof GuideRoute
   '/income': typeof IncomeRoute
   '/investments': typeof InvestmentsRouteWithChildren
-  '/markets': typeof MarketsRoute
   '/net-worth': typeof NetWorthRoute
   '/other-assets': typeof OtherAssetsRoute
   '/portfolio': typeof PortfolioRoute
@@ -219,7 +210,6 @@ export interface FileRouteTypes {
     | '/guide'
     | '/income'
     | '/investments'
-    | '/markets'
     | '/net-worth'
     | '/other-assets'
     | '/portfolio'
@@ -242,7 +232,6 @@ export interface FileRouteTypes {
     | '/guide'
     | '/income'
     | '/investments'
-    | '/markets'
     | '/net-worth'
     | '/other-assets'
     | '/portfolio'
@@ -265,7 +254,6 @@ export interface FileRouteTypes {
     | '/guide'
     | '/income'
     | '/investments'
-    | '/markets'
     | '/net-worth'
     | '/other-assets'
     | '/portfolio'
@@ -289,7 +277,6 @@ export interface RootRouteChildren {
   GuideRoute: typeof GuideRoute
   IncomeRoute: typeof IncomeRoute
   InvestmentsRoute: typeof InvestmentsRouteWithChildren
-  MarketsRoute: typeof MarketsRoute
   NetWorthRoute: typeof NetWorthRoute
   OtherAssetsRoute: typeof OtherAssetsRoute
   PortfolioRoute: typeof PortfolioRoute
@@ -365,13 +352,6 @@ declare module '@tanstack/react-router' {
       path: '/net-worth'
       fullPath: '/net-worth'
       preLoaderRoute: typeof NetWorthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/markets': {
-      id: '/markets'
-      path: '/markets'
-      fullPath: '/markets'
-      preLoaderRoute: typeof MarketsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/investments': {
@@ -476,7 +456,6 @@ const rootRouteChildren: RootRouteChildren = {
   GuideRoute: GuideRoute,
   IncomeRoute: IncomeRoute,
   InvestmentsRoute: InvestmentsRouteWithChildren,
-  MarketsRoute: MarketsRoute,
   NetWorthRoute: NetWorthRoute,
   OtherAssetsRoute: OtherAssetsRoute,
   PortfolioRoute: PortfolioRoute,
