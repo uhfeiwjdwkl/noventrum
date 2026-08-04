@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -30,6 +31,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InvestmentsSymbolRouteImport } from './routes/investments.$symbol'
 import { Route as AuthConfirmedRouteImport } from './routes/auth.confirmed'
 
+const WatchlistRoute = WatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/watchlist': typeof WatchlistRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/watchlist': typeof WatchlistRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
+  '/watchlist': typeof WatchlistRoute
   '/auth/confirmed': typeof AuthConfirmedRoute
   '/investments/$symbol': typeof InvestmentsSymbolRoute
 }
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/watchlist'
     | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesByTo: FileRoutesByTo
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/watchlist'
     | '/auth/confirmed'
     | '/investments/$symbol'
   id:
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/settings'
     | '/transactions'
+    | '/watchlist'
     | '/auth/confirmed'
     | '/investments/$symbol'
   fileRoutesById: FileRoutesById
@@ -286,11 +298,19 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
+  WatchlistRoute: typeof WatchlistRoute
   AuthConfirmedRoute: typeof AuthConfirmedRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/watchlist': {
+      id: '/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof WatchlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/transactions': {
       id: '/transactions'
       path: '/transactions'
@@ -465,18 +485,9 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
+  WatchlistRoute: WatchlistRoute,
   AuthConfirmedRoute: AuthConfirmedRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
