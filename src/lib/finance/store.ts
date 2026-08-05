@@ -409,7 +409,6 @@ export const useFinance = create<FinanceState>()(
               next.currency === s.settings.baseCurrency ? 1 : (patch.fxRate ?? undefined);
           }
           const trades = s.trades.map((t) => (t.id === id ? next : t));
-          const oldDelta = tradeCash(old);
           const newDelta = tradeCash(next);
           const transactions = s.transactions
             .map((t) => (t.tradeId === id ? { ...tradeTxn(next, newDelta), id: t.id } : t))
@@ -427,9 +426,7 @@ export const useFinance = create<FinanceState>()(
         set((s) => {
           const old = s.trades.find((t) => t.id === id);
           if (!old) return {};
-          const delta = tradeCash(old);
           const trades = s.trades.filter((t) => t.id !== id);
-          const linked = s.transactions.filter((t) => t.tradeId === id);
           return {
             trades,
             transactions: s.transactions.filter((t) => t.tradeId !== id),
