@@ -14,6 +14,7 @@ import type { AssetClass } from "@/lib/finance/data";
 import type { SymbolMatch } from "@/lib/prices.functions";
 import { CandlestickChart, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/watchlist")({
   head: () => ({
@@ -45,6 +46,7 @@ function AddTickerDialog() {
   const refreshWatchlist = useFinance((s) => s.refreshWatchlist);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [bulk, setBulk] = useState("");
 
   function pick(m: SymbolMatch) {
     addWatch({ symbol: m.symbol, name: m.name, assetClass: classOf(m.type) });
@@ -52,6 +54,17 @@ function AddTickerDialog() {
     setQ("");
     setOpen(false);
     void refreshWatchlist();
+  }
+
+  function addBulk() {
+    const symbols = bulk.split(/[\s,;]+/).map((s) => s.trim().toUpperCase()).filter(Boolean);
+    symbols.forEach((symbol) => addWatch({ symbol, name: symbol, assetClass: "other" }));
+    if (symbols.length) {
+      toast.success(`Added ${symbols.length} ticker${symbols.length === 1 ? "" : "s"}`);
+      setBulk("");
+      setOpen(false);
+      void refreshWatchlist();
+    }
   }
 
   return (
@@ -65,6 +78,11 @@ function AddTickerDialog() {
           Search any stock, ETF, crypto, commodity or currency pair. Watching a ticker never touches your ledger.
         </p>
         <SymbolSearch value={q} onChange={setQ} onSelect={pick} autoFocus />
+        <div className="border-t pt-4">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Or paste tickers in bulk</p>
+          <Textarea value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder="AAPL, MSFT, VAS.AX, BTC-USD" />
+          <Button type="button" variant="outline" className="mt-2" onClick={addBulk} disabled={!bulk.trim()}>Add all</Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

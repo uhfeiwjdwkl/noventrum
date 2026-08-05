@@ -18,6 +18,7 @@ import {
   portfolioCost,
   fmtCurrency,
   fmtPct,
+  accountBalanceAt,
 } from "@/lib/finance/data";
 import {
   Area,
@@ -39,7 +40,17 @@ import {
 import { TrendingUp, TrendingDown, Wallet, Landmark, PiggyBank, Percent, Sparkles } from "lucide-react";
 import { AddAccountDialog, AddTransactionDialog } from "@/components/finance/AddDialogs";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "Noventrum — Personal Finance Dashboard" },
+    { name: "description", content: "Track accounts, transactions, investments, budgets and net worth in one personal finance dashboard." },
+    { property: "og:title", content: "Noventrum — Personal Finance Dashboard" },
+    { property: "og:description", content: "Track accounts, transactions, investments, budgets and net worth in one dashboard." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: Dashboard,
+});
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-6)"];
 
@@ -50,19 +61,24 @@ function Dashboard() {
   const trades = useFinance((s) => s.trades);
   const properties = useFinance((s) => s.properties);
   const physicalAssets = useFinance((s) => s.physicalAssets);
+  const fxRates = useFinance((s) => s.fxRates);
+  const fxHistory = useFinance((s) => s.fxHistory);
+  const base = useFinance((s) => s.settings.baseCurrency);
 
-  const nw = netWorth(accounts);
-  const cashflow = monthlyCashflow(transactions).slice(-12);
+  const today = new Date().toISOString().slice(0, 10);
+  const valuedAccounts = accounts.map((a) => ({ ...a, balance: accountBalanceAt(a, transactions, today) }));
+  const nw = netWorth(valuedAccounts, fxRates, base);
+  const cashflow = monthlyCashflow(transactions, fxRates, base).slice(-12);
   const lastMonth = cashflow[cashflow.length - 1] ?? { income: 0, expense: 0, net: 0 };
   const savingsRate = lastMonth.income > 0 ? ((lastMonth.income - lastMonth.expense) / lastMonth.income) * 100 : 0;
-  const nws = netWorthSeries(accounts, transactions, holdings, properties, physicalAssets, trades);
+  const nws = netWorthSeries(valuedAccounts, transactions, holdings, properties, physicalAssets, trades, fxRates, base, fxHistory);
   const first = nws[0]?.value ?? nw;
   const nwChange = first !== 0 ? ((nw - first) / Math.abs(first)) * 100 : 0;
-  const pv = portfolioValue(holdings);
+  const pv = portfolioValue(holdings, fxRates, base);
   const pc = portfolioCost(holdings);
   const pReturn = pc > 0 ? ((pv - pc) / pc) * 100 : 0;
-  const cats = spendingByCategory(transactions).slice(0, 6);
-  const savings = savingsRateSeries(transactions).slice(-12);
+  const cats = spendingByCategory(transactions, 30, fxRates, base).slice(0, 6);
+  const savings = savingsRateSeries(transactions, fxRates, base).slice(-12);
   const recent = transactions.slice(0, 6);
   const topHoldings = [...holdings].sort((a, b) => b.shares * b.price - a.shares * a.price).slice(0, 5);
 
@@ -109,8 +125,8 @@ function Dashboard() {
     <AppShell title="Dashboard" subtitle="Your complete financial picture.">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Net Worth" value={nw} change={nwChange} icon={<TrendingUp className="h-4 w-4" />} hint="all time" />
-        <StatCard label="Total Assets" value={totalAssets(accounts)} icon={<Landmark className="h-4 w-4" />} />
-        <StatCard label="Total Liabilities" value={totalLiabilities(accounts)} icon={<Wallet className="h-4 w-4" />} />
+        <StatCard label="Total Assets" value={totalAssets(valuedAccounts, fxRates, base)} icon={<Landmark className="h-4 w-4" />} />
+        <StatCard label="Total Liabilities" value={totalLiabilities(valuedAccounts, fxRates, base)} icon={<Wallet className="h-4 w-4" />} />
         <StatCard label="Savings Rate" value={savingsRate} currency={false} suffix="%" icon={<Percent className="h-4 w-4" />} hint="this month" />
       </div>
 

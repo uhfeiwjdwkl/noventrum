@@ -75,7 +75,7 @@ export function AddAccountDialog({
     const bal = Number(balance) || 0;
     // For liabilities, coerce to negative
     const signed = type === "credit" || type === "loan" || type === "mortgage" ? -Math.abs(bal) : bal;
-    addAccount({ name: name.trim(), institution: institution.trim(), type, balance: signed, currency });
+    addAccount({ name: name.trim(), institution: institution.trim(), type, balance: signed, balanceDate: today(), currency });
     toast.success("Account added");
     setName(""); setInstitution(""); setBalance(""); setType("checking");
     setOpen(false);
@@ -113,7 +113,7 @@ export function AddAccountDialog({
               <CurrencyPicker value={currency} onChange={setCurrency} />
             </div>
           </div>
-          <div><Label>Current balance</Label><Input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" /></div>
+          <div><Label>Current balance</Label><Input type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" /><p className="mt-1 text-xs text-muted-foreground">This is today's confirmed balance. Backdated entries infer the earlier balance instead of changing it.</p></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit">Add account</Button>

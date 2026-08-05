@@ -5,12 +5,14 @@ import {
   ComposedChart,
   ResponsiveContainer,
   Scatter,
+  ReferenceArea,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { fmtCurrency } from "@/lib/finance/data";
 import type { Trade } from "@/lib/finance/data";
 import { getHistory, type HistoryPoint } from "@/lib/prices.functions";
@@ -69,6 +71,7 @@ export function PriceChart({
   const [cur, setCur] = useState(currency ?? "USD");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selection, setSelection] = useState<string[]>([]);
 
   useEffect(() => {
     const cfg = RANGES.find((r) => r.key === rangeKey)!;
@@ -90,6 +93,16 @@ export function PriceChart({
   }, [symbol, rangeKey]);
 
   const data = useMemo(() => withTradeMarkers(points, trades), [points, trades]);
+  const comparison = useMemo(() => {
+    if (selection.length !== 2) return null;
+    const a = data.find((p) => p.date === selection[0]);
+    const b = data.find((p) => p.date === selection[1]);
+    if (!a || !b) return null;
+    const first = a.date < b.date ? a : b;
+    const last = a.date < b.date ? b : a;
+    const value = last.close - first.close;
+    return { first, last, value, pct: first.close ? (value / first.close) * 100 : 0 };
+  }, [data, selection]);
 
   return (
     <div className={className}>
@@ -100,9 +113,11 @@ export function PriceChart({
         </div>
         <div className="inline-flex rounded-md border border-border overflow-hidden">
           {RANGES.map((r) => (
-            <button
+            <Button
               key={r.key}
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setRangeKey(r.key)}
               className={cn(
                 "px-2.5 py-1 text-xs font-medium transition-colors",
@@ -112,10 +127,19 @@ export function PriceChart({
               )}
             >
               {r.key}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
+      {comparison && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border bg-muted/40 px-3 py-2 text-xs">
+          <span>{comparison.first.date} → {comparison.last.date}</span>
+          <span className={comparison.value >= 0 ? "text-success" : "text-destructive"}>
+            {fmtCurrency(comparison.value, { currency: cur })} ({comparison.pct >= 0 ? "+" : ""}{comparison.pct.toFixed(2)}%)
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => setSelection([])}>Clear</Button>
+        </div>
+      )}
 
       <div style={{ height }} className="relative">
         {loading && (
@@ -129,7 +153,15 @@ export function PriceChart({
           </div>
         ) : (
           <ResponsiveContainer>
-            <ComposedChart data={data}>
+            <ComposedChart
+              data={data}
+              onClick={(state) => {
+                const date = typeof state?.activeLabel === "string" ? state.activeLabel : undefined;
+                if (!date) return;
+                setSelection((current) => current.length === 1 ? [current[0], date] : [date]);
+              }}
+              className="cursor-crosshair"
+            >
               <defs>
                 <linearGradient id={`pc-${symbol}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.35} />
@@ -172,6 +204,9 @@ export function PriceChart({
                 strokeWidth={2}
                 fill={`url(#pc-${symbol})`}
               />
+              {selection.length === 2 && (
+                <ReferenceArea x1={selection[0]} x2={selection[1]} fill="var(--chart-2)" fillOpacity={0.12} />
+              )}
               <Scatter dataKey="buy" fill="var(--chart-1)" shape="circle" legendType="none" />
               <Scatter dataKey="sell" fill="var(--chart-5)" shape="circle" legendType="none" />
             </ComposedChart>

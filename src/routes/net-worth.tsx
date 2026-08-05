@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFinance } from "@/lib/finance/store";
-import { netWorth, totalAssets, totalLiabilities, netWorthSeries, fmtCurrency, fmtPct } from "@/lib/finance/data";
+import { netWorth, totalAssets, totalLiabilities, netWorthSeries, fmtCurrency, fmtPct, accountBalanceAt } from "@/lib/finance/data";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { AddAccountDialog } from "@/components/finance/AddDialogs";
@@ -25,16 +25,21 @@ function NetWorthPage() {
   const trades = useFinance((s) => s.trades);
   const properties = useFinance((s) => s.properties);
   const physicalAssets = useFinance((s) => s.physicalAssets);
+  const fxRates = useFinance((s) => s.fxRates);
+  const fxHistory = useFinance((s) => s.fxHistory);
+  const base = useFinance((s) => s.settings.baseCurrency);
   const [addOpen, setAddOpen] = useState(false);
 
-  const nw = netWorth(accounts);
-  const series = netWorthSeries(accounts, transactions, holdings, properties, physicalAssets, trades);
+  const today = new Date().toISOString().slice(0, 10);
+  const valuedAccounts = accounts.map((a) => ({ ...a, balance: accountBalanceAt(a, transactions, today) }));
+  const nw = netWorth(valuedAccounts, fxRates, base);
+  const series = netWorthSeries(valuedAccounts, transactions, holdings, properties, physicalAssets, trades, fxRates, base, fxHistory);
   const first = series[0]?.value ?? nw;
   const change = first !== 0 ? ((nw - first) / Math.abs(first)) * 100 : 0;
-  const assets = accounts.filter((a) => a.balance > 0);
-  const liab = accounts.filter((a) => a.balance < 0);
-  const ta = totalAssets(accounts);
-  const tl = totalLiabilities(accounts);
+  const assets = valuedAccounts.filter((a) => a.balance > 0);
+  const liab = valuedAccounts.filter((a) => a.balance < 0);
+  const ta = totalAssets(valuedAccounts, fxRates, base);
+  const tl = totalLiabilities(valuedAccounts, fxRates, base);
 
   if (accounts.length === 0) {
     return (
@@ -103,7 +108,7 @@ function NetWorthPage() {
                   <TableRow key={a.id}>
                     <TableCell><div className="font-medium">{a.name}</div><div className="text-xs text-muted-foreground">{a.institution}</div></TableCell>
                     <TableCell><Badge variant="outline" className="capitalize">{a.type}</Badge></TableCell>
-                    <TableCell className="text-right num font-medium">{fmtCurrency(a.balance)}</TableCell>
+                     <TableCell className="text-right num font-medium">{fmtCurrency(a.balance, { currency: a.currency })}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -126,7 +131,7 @@ function NetWorthPage() {
                   <TableRow key={a.id}>
                     <TableCell><div className="font-medium">{a.name}</div><div className="text-xs text-muted-foreground">{a.institution}</div></TableCell>
                     <TableCell><Badge variant="outline" className="capitalize">{a.type}</Badge></TableCell>
-                    <TableCell className="text-right num font-medium text-destructive">{fmtCurrency(a.balance)}</TableCell>
+                     <TableCell className="text-right num font-medium text-destructive">{fmtCurrency(a.balance, { currency: a.currency })}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

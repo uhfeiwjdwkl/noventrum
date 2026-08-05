@@ -294,7 +294,7 @@ export async function searchYahoo(query: string): Promise<RawMatch[]> {
     }>;
   };
   return (j.quotes ?? [])
-    .filter((x) => x.symbol && x.isYahooFinance !== false)
+    .filter((x) => x.symbol)
     .map((x) => ({
       symbol: x.symbol!,
       name: x.longname ?? x.shortname ?? x.symbol!,

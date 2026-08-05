@@ -6,10 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFinance } from "@/lib/finance/store";
-import { totalAssets, totalLiabilities, fmtCurrency } from "@/lib/finance/data";
+import { totalAssets, totalLiabilities, fmtCurrency, accountBalanceAt } from "@/lib/finance/data";
 import { Building2, CreditCard, Landmark, Wallet, TrendingUp, Home, Car, Trash2 } from "lucide-react";
 import { AddAccountDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
+import { ImportStatementDialog } from "@/components/finance/ImportStatementDialog";
 
 export const Route = createFileRoute("/accounts")({
   head: () => ({ meta: [{ title: "Accounts — Noventrum" }] }),
@@ -28,10 +29,15 @@ const ICONS: Record<string, typeof Building2> = {
 
 function AccountsPage() {
   const accounts = useFinance((s) => s.accounts);
+  const transactions = useFinance((s) => s.transactions);
+  const fxRates = useFinance((s) => s.fxRates);
+  const base = useFinance((s) => s.settings.baseCurrency);
   const deleteAccount = useFinance((s) => s.deleteAccount);
   const [addOpen, setAddOpen] = useState(false);
 
-  const grouped = accounts.reduce<Record<string, typeof accounts>>((acc, a) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const valuedAccounts = accounts.map((a) => ({ ...a, balance: accountBalanceAt(a, transactions, today) }));
+  const grouped = valuedAccounts.reduce<Record<string, typeof accounts>>((acc, a) => {
     (acc[a.type] ||= []).push(a);
     return acc;
   }, {});
@@ -40,7 +46,7 @@ function AccountsPage() {
     <AppShell
       title="Accounts"
       subtitle={accounts.length ? `${accounts.length} accounts` : "Add your first account to get started"}
-      actions={<AddAccountDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add account</Button>} />}
+       actions={<><ImportStatementDialog trigger={<Button size="sm" variant="outline">Import statement</Button>} /><AddAccountDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add account</Button>} /></>}
     >
       {accounts.length === 0 ? (
         <EmptyState
@@ -52,9 +58,9 @@ function AccountsPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard label="Total assets" value={totalAssets(accounts)} />
-            <StatCard label="Total liabilities" value={totalLiabilities(accounts)} />
-            <StatCard label="Net worth" value={totalAssets(accounts) - totalLiabilities(accounts)} />
+            <StatCard label="Total assets" value={totalAssets(valuedAccounts, fxRates, base)} />
+            <StatCard label="Total liabilities" value={totalLiabilities(valuedAccounts, fxRates, base)} />
+            <StatCard label="Net worth" value={totalAssets(valuedAccounts, fxRates, base) - totalLiabilities(valuedAccounts, fxRates, base)} />
             <StatCard label="Accounts" value={accounts.length} currency={false} />
           </div>
 
@@ -81,7 +87,7 @@ function AccountsPage() {
                         <div className="font-semibold">{a.name}</div>
                         <div className="text-xs text-muted-foreground">{a.institution || "—"}</div>
                       </div>
-                      <div className={"text-2xl font-semibold num " + (a.balance < 0 ? "text-destructive" : "")}>{fmtCurrency(a.balance)}</div>
+                       <div className={"text-2xl font-semibold num " + (a.balance < 0 ? "text-destructive" : "")}>{fmtCurrency(a.balance, { currency: a.currency })}</div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{a.currency}</span>
                         <span className="capitalize">{a.type}</span>

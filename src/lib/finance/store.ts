@@ -259,14 +259,18 @@ export const useFinance = create<FinanceState>()(
 
       /* ------------------------------ accounts ----------------------------- */
       addAccount: (a) => {
-        const account: Account = { ...a, id: uid() };
+        const account: Account = { ...a, id: uid(), balanceDate: a.balanceDate ?? todayISO() };
         set((s) => ({ accounts: [...s.accounts, account] }));
         if (account.currency !== get().settings.baseCurrency) void get().refreshFx();
         return account;
       },
       updateAccount: (id, patch) =>
         set((s) => ({
-          accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+          accounts: s.accounts.map((a) =>
+            a.id === id
+              ? { ...a, ...patch, balanceDate: patch.balance !== undefined ? todayISO() : a.balanceDate }
+              : a,
+          ),
         })),
       deleteAccount: (id) =>
         set((s) => ({
@@ -278,9 +282,6 @@ export const useFinance = create<FinanceState>()(
       addTransaction: (t) => {
         const txn: Transaction = { ...t, id: uid() };
         set((s) => {
-          const accounts = s.accounts.map((a) =>
-            a.id === t.accountId ? { ...a, balance: a.balance + t.amount } : a,
-          );
           const budgets = s.budgets.map((b) =>
             t.kind === "expense" && b.category === t.category
               ? { ...b, spent: b.spent + Math.abs(t.amount) }
@@ -288,7 +289,6 @@ export const useFinance = create<FinanceState>()(
           );
           return {
             transactions: [txn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)),
-            accounts,
             budgets,
           };
         });
@@ -299,14 +299,7 @@ export const useFinance = create<FinanceState>()(
           const old = s.transactions.find((t) => t.id === id);
           if (!old) return {};
           const next: Transaction = { ...old, ...patch, id };
-          const accounts = s.accounts.map((a) => {
-            let bal = a.balance;
-            if (a.id === old.accountId) bal -= old.amount;
-            if (a.id === next.accountId) bal += next.amount;
-            return bal === a.balance ? a : { ...a, balance: bal };
-          });
           return {
-            accounts,
             transactions: s.transactions
               .map((t) => (t.id === id ? next : t))
               .sort((a, b) => (a.date < b.date ? 1 : -1)),
@@ -317,12 +310,6 @@ export const useFinance = create<FinanceState>()(
         set((s) => {
           const doomed = s.transactions.filter((t) => ids.includes(t.id));
           if (doomed.length === 0) return {};
-          const accounts = s.accounts.map((a) => {
-            const delta = doomed
-              .filter((t) => t.accountId === a.id)
-              .reduce((sum, t) => sum + t.amount, 0);
-            return delta ? { ...a, balance: a.balance - delta } : a;
-          });
           const budgets = s.budgets.map((b) => {
             const spent = doomed
               .filter((t) => t.kind === "expense" && t.category === b.category)
@@ -331,7 +318,6 @@ export const useFinance = create<FinanceState>()(
           });
           return {
             transactions: s.transactions.filter((t) => !ids.includes(t.id)),
-            accounts,
             budgets,
           };
         }),
@@ -351,16 +337,9 @@ export const useFinance = create<FinanceState>()(
           if (!h) return {};
           const doomed = s.trades.filter((t) => t.symbol === h.symbol);
           const ids = new Set(doomed.map((t) => t.id));
-          const accounts = s.accounts.map((a) => {
-            const delta = s.transactions
-              .filter((t) => t.tradeId && ids.has(t.tradeId) && t.accountId === a.id)
-              .reduce((sum, t) => sum + t.amount, 0);
-            return delta ? { ...a, balance: a.balance - delta } : a;
-          });
           const trades = s.trades.filter((t) => !ids.has(t.id));
           return {
             trades,
-            accounts,
             transactions: s.transactions.filter((t) => !(t.tradeId && ids.has(t.tradeId))),
             holdings: deriveHoldings(trades, s.holdings, s.assetMeta).filter(
               (x) => x.symbol !== h.symbol,
@@ -402,11 +381,6 @@ export const useFinance = create<FinanceState>()(
           const trades = [trade, ...s.trades];
           const cashDelta = tradeCash(trade);
           const txn = tradeTxn(trade, cashDelta);
-          const accounts = t.accountId
-            ? s.accounts.map((a) =>
-                a.id === t.accountId ? { ...a, balance: a.balance + cashDelta } : a,
-              )
-            : s.accounts;
           return {
             assetMeta,
             trades,
@@ -414,7 +388,6 @@ export const useFinance = create<FinanceState>()(
             transactions: t.accountId
               ? [txn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1))
               : s.transactions,
-            accounts,
           };
         });
         if (!trade.fxRate) void get().backfillFxRates();
@@ -440,20 +413,12 @@ export const useFinance = create<FinanceState>()(
               next.currency === s.settings.baseCurrency ? 1 : (patch.fxRate ?? undefined);
           }
           const trades = s.trades.map((t) => (t.id === id ? next : t));
-          const oldDelta = tradeCash(old);
           const newDelta = tradeCash(next);
-          const accounts = s.accounts.map((a) => {
-            let bal = a.balance;
-            if (a.id === old.accountId) bal -= oldDelta;
-            if (a.id === next.accountId) bal += newDelta;
-            return bal === a.balance ? a : { ...a, balance: bal };
-          });
           const transactions = s.transactions
             .map((t) => (t.tradeId === id ? { ...tradeTxn(next, newDelta), id: t.id } : t))
             .sort((a, b) => (a.date < b.date ? 1 : -1));
           return {
             trades,
-            accounts,
             transactions,
             holdings: deriveHoldings(trades, s.holdings, s.assetMeta),
           };
@@ -465,20 +430,9 @@ export const useFinance = create<FinanceState>()(
         set((s) => {
           const old = s.trades.find((t) => t.id === id);
           if (!old) return {};
-          const delta = tradeCash(old);
           const trades = s.trades.filter((t) => t.id !== id);
-          const linked = s.transactions.filter((t) => t.tradeId === id);
-          const accounts = s.accounts.map((a) => {
-            const d = linked
-              .filter((t) => t.accountId === a.id)
-              .reduce((sum, t) => sum + t.amount, 0);
-            const fallback = a.id === old.accountId && linked.length === 0 ? delta : 0;
-            const total = d || fallback;
-            return total ? { ...a, balance: a.balance - total } : a;
-          });
           return {
             trades,
-            accounts,
             transactions: s.transactions.filter((t) => t.tradeId !== id),
             holdings: deriveHoldings(trades, s.holdings, s.assetMeta),
           };
@@ -540,13 +494,6 @@ export const useFinance = create<FinanceState>()(
         set((s) => ({
           trades: [trade, ...s.trades],
           transactions: [out, inn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)),
-          accounts: s.accounts.map((a) =>
-            a.id === x.fromAccountId
-              ? { ...a, balance: a.balance - x.amount }
-              : a.id === x.toAccountId
-                ? { ...a, balance: a.balance + toAmount }
-                : a,
-          ),
         }));
         void get().refreshFx();
       },
@@ -571,13 +518,9 @@ export const useFinance = create<FinanceState>()(
       addDividend: (d) => {
         const div: Dividend = { ...d, id: uid() };
         set((s) => {
-          let accounts = s.accounts;
           let transactions = s.transactions;
           if (d.accountId) {
             const net = d.amount - (d.tax ?? 0);
-            accounts = s.accounts.map((a) =>
-              a.id === d.accountId ? { ...a, balance: a.balance + net } : a,
-            );
             const divTxn: Transaction = {
               id: uid(),
               date: d.date,
@@ -591,7 +534,7 @@ export const useFinance = create<FinanceState>()(
             };
             transactions = [divTxn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
           }
-          return { dividends: [div, ...s.dividends], accounts, transactions };
+          return { dividends: [div, ...s.dividends], transactions };
         });
         return div;
       },
