@@ -16,6 +16,8 @@ export interface Account {
   type: AccountType;
   balance: number;
   currency: string;
+  /** Date on which `balance` was confirmed. Ledger entries never rewrite this anchor. */
+  balanceDate?: string;
   /** true for accounts that exist purely to hold a foreign currency */
   isFx?: boolean;
 }
@@ -269,6 +271,20 @@ export function netWorth(accounts: Account[], fx: FxMap = {}, base = "USD") {
   return totalAssets(accounts, fx, base) - totalLiabilities(accounts, fx, base);
 }
 
+/** Account balance at a date, inferred around the confirmed balance anchor. */
+export function accountBalanceAt(account: Account, transactions: Transaction[], date: string) {
+  const anchor = account.balanceDate ?? new Date().toISOString().slice(0, 10);
+  const ledger = transactions.filter((t) => t.accountId === account.id);
+  if (date < anchor) {
+    return account.balance - ledger
+      .filter((t) => t.date > date && t.date <= anchor)
+      .reduce((sum, t) => sum + t.amount, 0);
+  }
+  return account.balance + ledger
+    .filter((t) => t.date > anchor && t.date <= date)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
 /** Cash held in currencies other than the base one, valued in base. */
 export function currencyPositions(accounts: Account[], fx: FxMap = {}, base = "USD") {
   return accounts
@@ -319,14 +335,15 @@ export function monthKey(d: string) {
   return d.slice(0, 7);
 }
 
-export function monthlyCashflow(transactions: Transaction[]) {
+export function monthlyCashflow(transactions: Transaction[], fx: FxMap = {}, base = "USD") {
   const map = new Map<string, { income: number; expense: number }>();
   for (const t of transactions) {
     if (t.kind !== "income" && t.kind !== "expense") continue;
     const k = monthKey(t.date);
     const cur = map.get(k) ?? { income: 0, expense: 0 };
-    if (t.amount > 0) cur.income += t.amount;
-    else cur.expense += -t.amount;
+    const amount = toBase(t.amount, t.currency, fx, base);
+    if (amount > 0) cur.income += amount;
+    else cur.expense += -amount;
     map.set(k, cur);
   }
   return Array.from(map.entries())
@@ -402,14 +419,14 @@ export function netWorthSeries(
   return series;
 }
 
-export function spendingByCategory(transactions: Transaction[], days = 30) {
+export function spendingByCategory(transactions: Transaction[], days = 30, fx: FxMap = {}, base = "USD") {
   const map = new Map<string, number>();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   for (const t of transactions) {
     if (t.kind !== "expense") continue;
     if (new Date(t.date) < cutoff) continue;
-    map.set(t.category, (map.get(t.category) ?? 0) + -t.amount);
+    map.set(t.category, (map.get(t.category) ?? 0) + -toBase(t.amount, t.currency, fx, base));
   }
   return Array.from(map.entries())
     .map(([category, amount]) => ({ category, amount: Math.round(amount * 100) / 100 }))
@@ -432,14 +449,14 @@ export function isSideIncome(category: string) {
   return SIDE_CATEGORIES.has(category.toLowerCase());
 }
 
-export function incomeBySource(transactions: Transaction[]) {
+export function incomeBySource(transactions: Transaction[], fx: FxMap = {}, base = "USD") {
   const map = new Map<string, number>();
   const cutoff = new Date();
   cutoff.setFullYear(cutoff.getFullYear() - 1);
   for (const t of transactions) {
     if (t.kind !== "income") continue;
     if (new Date(t.date) < cutoff) continue;
-    map.set(t.category, (map.get(t.category) ?? 0) + t.amount);
+    map.set(t.category, (map.get(t.category) ?? 0) + toBase(t.amount, t.currency, fx, base));
   }
   return Array.from(map.entries())
     .map(([source, amount]) => ({ source, amount: Math.round(amount * 100) / 100 }))
@@ -513,8 +530,8 @@ export function describeRule(rule: RecurringRule) {
   return n === 1 ? `every ${rule.unit}` : `every ${n} ${unit}`;
 }
 
-export function savingsRateSeries(transactions: Transaction[]) {
-  return monthlyCashflow(transactions).map((m) => ({
+export function savingsRateSeries(transactions: Transaction[], fx: FxMap = {}, base = "USD") {
+  return monthlyCashflow(transactions, fx, base).map((m) => ({
     month: m.month,
     rate:
       m.income > 0
