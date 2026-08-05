@@ -12,6 +12,7 @@ import { useFinance } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { useKommenszlapfAuth } from "@/lib/kommenszlapfAuth";
 import { toast } from "sonner";
+import { ImportStatementDialog } from "@/components/finance/ImportStatementDialog";
 
 const TIMEZONES = [
   "UTC", "Australia/Sydney", "Australia/Melbourne", "Australia/Brisbane", "Australia/Adelaide",
@@ -161,6 +162,7 @@ function SettingsPage() {
           <p className="text-sm text-muted-foreground">Export or reset your data. Everything is stored locally on this device.</p>
         </div>
         <Card className="p-6 lg:col-span-2 flex flex-wrap gap-3">
+          <ImportStatementDialog />
           <Button variant="outline" onClick={exportData}>Export all data (JSON)</Button>
           <Button variant="destructive" onClick={handleReset}>Delete all data</Button>
         </Card>

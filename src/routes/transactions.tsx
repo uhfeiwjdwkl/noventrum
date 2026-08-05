@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
-import { fmtCurrency } from "@/lib/finance/data";
+import { fmtCurrency, toBase } from "@/lib/finance/data";
 import { useMemo, useState } from "react";
 import { Search, Filter, Trash2, Receipt } from "lucide-react";
 import { AddTransactionDialog } from "@/components/finance/AddDialogs";
@@ -22,6 +22,8 @@ function TransactionsPage() {
   const transactions = useFinance((s) => s.transactions);
   const accounts = useFinance((s) => s.accounts);
   const deleteTransaction = useFinance((s) => s.deleteTransaction);
+  const fxRates = useFinance((s) => s.fxRates);
+  const base = useFinance((s) => s.settings.baseCurrency);
 
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("all");
@@ -41,8 +43,8 @@ function TransactionsPage() {
     });
   }, [transactions, q, cat, kind, acct]);
 
-  const totalIn = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0);
+  const totalIn = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + toBase(t.amount, t.currency, fxRates, base), 0);
+  const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + toBase(t.amount, t.currency, fxRates, base), 0);
 
   return (
     <AppShell
@@ -127,7 +129,7 @@ function TransactionsPage() {
                       <TableCell>
                         {t.recurring && <Badge variant="outline" className="text-xs">Recurring</Badge>}
                       </TableCell>
-                      <TableCell className={"text-right num font-medium " + (t.amount > 0 ? "text-success" : "")}>{fmtCurrency(t.amount)}</TableCell>
+                       <TableCell className={"text-right num font-medium " + (t.amount > 0 ? "text-success" : "")}>{fmtCurrency(t.amount, { currency: t.currency ?? a?.currency })}</TableCell>
                       <TableCell className="text-right">
                         <button aria-label="Delete transaction" onClick={() => deleteTransaction(t.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive">
                           <Trash2 className="h-4 w-4" />

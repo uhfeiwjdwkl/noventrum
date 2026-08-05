@@ -10,6 +10,7 @@ import { totalAssets, totalLiabilities, fmtCurrency, accountBalanceAt } from "@/
 import { Building2, CreditCard, Landmark, Wallet, TrendingUp, Home, Car, Trash2 } from "lucide-react";
 import { AddAccountDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
+import { ImportStatementDialog } from "@/components/finance/ImportStatementDialog";
 
 export const Route = createFileRoute("/accounts")({
   head: () => ({ meta: [{ title: "Accounts — Noventrum" }] }),
@@ -45,7 +46,7 @@ function AccountsPage() {
     <AppShell
       title="Accounts"
       subtitle={accounts.length ? `${accounts.length} accounts` : "Add your first account to get started"}
-      actions={<AddAccountDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add account</Button>} />}
+       actions={<><ImportStatementDialog trigger={<Button size="sm" variant="outline">Import statement</Button>} /><AddAccountDialog open={addOpen} onOpenChange={setAddOpen} trigger={<Button size="sm">Add account</Button>} /></>}
     >
       {accounts.length === 0 ? (
         <EmptyState

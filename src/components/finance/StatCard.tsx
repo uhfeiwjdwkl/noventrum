@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { fmtCurrency, fmtPct } from "@/lib/finance/data";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function StatCard({
@@ -36,7 +35,6 @@ export function StatCard({
       <div className="text-2xl sm:text-3xl font-semibold tracking-tight num">{display}</div>
       {change !== undefined && (
         <div className={cn("flex items-center gap-1 text-xs font-medium", up ? "text-success" : "text-destructive")}>
-          {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
           <span>{fmtPct(change)}</span>
           {hint && <span className="text-muted-foreground font-normal ml-1">{hint}</span>}
         </div>
