@@ -493,13 +493,6 @@ export const useFinance = create<FinanceState>()(
         set((s) => ({
           trades: [trade, ...s.trades],
           transactions: [out, inn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)),
-          accounts: s.accounts.map((a) =>
-            a.id === x.fromAccountId
-              ? { ...a, balance: a.balance - x.amount }
-              : a.id === x.toAccountId
-                ? { ...a, balance: a.balance + toAmount }
-                : a,
-          ),
         }));
         void get().refreshFx();
       },
@@ -524,13 +517,9 @@ export const useFinance = create<FinanceState>()(
       addDividend: (d) => {
         const div: Dividend = { ...d, id: uid() };
         set((s) => {
-          let accounts = s.accounts;
           let transactions = s.transactions;
           if (d.accountId) {
             const net = d.amount - (d.tax ?? 0);
-            accounts = s.accounts.map((a) =>
-              a.id === d.accountId ? { ...a, balance: a.balance + net } : a,
-            );
             const divTxn: Transaction = {
               id: uid(),
               date: d.date,
@@ -544,7 +533,7 @@ export const useFinance = create<FinanceState>()(
             };
             transactions = [divTxn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1));
           }
-          return { dividends: [div, ...s.dividends], accounts, transactions };
+          return { dividends: [div, ...s.dividends], transactions };
         });
         return div;
       },
