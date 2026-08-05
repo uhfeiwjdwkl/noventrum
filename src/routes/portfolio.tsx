@@ -20,12 +20,15 @@ const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--cha
 
 function PortfolioPage() {
   const holdings = useFinance((s) => s.holdings);
+  const accounts = useFinance((s) => s.accounts);
+  const fxRates = useFinance((s) => s.fxRates);
+  const base = useFinance((s) => s.settings.baseCurrency);
   const [addOpen, setAddOpen] = useState(false);
 
-  const pv = portfolioValue(holdings);
+  const pv = portfolioValue(holdings, fxRates, base);
   const pc = portfolioCost(holdings);
   const pl = pv - pc;
-  const alloc = assetAllocation(holdings);
+  const alloc = assetAllocation(holdings, [], [], fxRates, base, accounts);
   const bySector = new Map<string, number>();
   holdings.forEach((h) => bySector.set(h.sector ?? "Other", (bySector.get(h.sector ?? "Other") ?? 0) + h.shares * h.price));
   const sectors = Array.from(bySector.entries()).map(([sector, value]) => ({ sector, value: Math.round(value) })).sort((a, b) => b.value - a.value);

@@ -27,6 +27,8 @@ function InvestmentsPage() {
   const holdings = useFinance((s) => s.holdings);
   const trades = useFinance((s) => s.trades);
   const accounts = useFinance((s) => s.accounts);
+  const fxRates = useFinance((s) => s.fxRates);
+  const base = useFinance((s) => s.settings.baseCurrency);
   const deleteHolding = useFinance((s) => s.deleteHolding);
   const deleteTrade = useFinance((s) => s.deleteTrade);
   const refreshPrices = useFinance((s) => s.refreshPrices);
@@ -45,12 +47,12 @@ function InvestmentsPage() {
     else toast.error("Live quotes failed");
   }
 
-  const pv = portfolioValue(holdings);
+  const pv = portfolioValue(holdings, fxRates, base);
   const pc = portfolioCost(holdings);
   const pl = pv - pc;
   const plPct = pc > 0 ? (pl / pc) * 100 : 0;
   const realized = realizedPL(holdings);
-  const alloc = assetAllocation(holdings);
+  const alloc = assetAllocation(holdings, [], [], fxRates, base, accounts);
   const sortedTrades = [...trades]
     .filter((t) => tradeSide === "all" || t.side === tradeSide)
     .filter((t) => !tradeQuery || `${t.symbol} ${t.name ?? ""} ${t.notes ?? ""}`.toLowerCase().includes(tradeQuery.toLowerCase()))
