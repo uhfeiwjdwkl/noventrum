@@ -44,9 +44,11 @@ export const searchSymbols = createServerFn({ method: "GET" })
     const q = data.query.trim();
     if (q.length < 1) return [];
     try {
-      return await searchYahoo(q);
+      const matches = await searchYahoo(q);
+      if (matches.length > 0) return matches;
+      return [{ symbol: q.toUpperCase(), name: q.toUpperCase(), exchange: "", type: "Ticker" }];
     } catch {
-      return [];
+      return [{ symbol: q.toUpperCase(), name: q.toUpperCase(), exchange: "", type: "Ticker" }];
     }
   });
 

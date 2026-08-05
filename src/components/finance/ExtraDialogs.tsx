@@ -36,12 +36,20 @@ export function BuySellDialog({
   open,
   onOpenChange,
   defaultSide,
+  defaultSymbol,
+  defaultName,
+  defaultAssetClass,
+  defaultCurrency,
   editTrade,
 }: {
   trigger?: ReactNode;
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
   defaultSide?: "buy" | "sell";
+  defaultSymbol?: string;
+  defaultName?: string;
+  defaultAssetClass?: AssetClass;
+  defaultCurrency?: string;
   /** when supplied the dialog edits this logged trade instead of adding one */
   editTrade?: Trade;
 }) {
@@ -55,9 +63,9 @@ export function BuySellDialog({
 
   const brokerage = accounts.filter((a) => a.type === "brokerage" || a.type === "cash");
 
-  const [symbol, setSymbol] = useState(editTrade?.symbol ?? "");
-  const [name, setName] = useState(editTrade?.name ?? "");
-  const [assetClass, setAssetClass] = useState<AssetClass>(editTrade?.assetClass ?? "stock");
+  const [symbol, setSymbol] = useState(editTrade?.symbol ?? defaultSymbol ?? "");
+  const [name, setName] = useState(editTrade?.name ?? defaultName ?? "");
+  const [assetClass, setAssetClass] = useState<AssetClass>(editTrade?.assetClass ?? defaultAssetClass ?? "stock");
   const [side, setSide] = useState<"buy" | "sell">(editTrade?.side ?? defaultSide ?? "buy");
   const [shares, setShares] = useState(editTrade ? String(editTrade.shares) : "");
   const [price, setPrice] = useState(editTrade ? String(editTrade.price) : "");
@@ -65,7 +73,7 @@ export function BuySellDialog({
   const [tax, setTax] = useState(editTrade?.tax ? String(editTrade.tax) : "");
   const [date, setDate] = useState(editTrade?.date ?? today());
   const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
-  const [currency, setCurrency] = useState(editTrade?.currency ?? useFinance.getState().settings.baseCurrency);
+  const [currency, setCurrency] = useState(editTrade?.currency ?? defaultCurrency ?? useFinance.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
 
   // Quantity currently held for this symbol, so "Sell all" needs no maths.
