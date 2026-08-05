@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ function normalize(input: unknown): Row[] {
   return [];
 }
 
-export function ImportStatementDialog({ trigger }: { trigger?: React.ReactNode }) {
+export function ImportStatementDialog({ trigger }: { trigger?: ReactNode }) {
   const accounts = useFinance((s) => s.accounts);
   const addAccount = useFinance((s) => s.addAccount);
   const addTransaction = useFinance((s) => s.addTransaction);
