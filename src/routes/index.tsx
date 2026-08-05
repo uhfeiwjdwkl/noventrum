@@ -40,7 +40,17 @@ import {
 import { TrendingUp, TrendingDown, Wallet, Landmark, PiggyBank, Percent, Sparkles } from "lucide-react";
 import { AddAccountDialog, AddTransactionDialog } from "@/components/finance/AddDialogs";
 
-export const Route = createFileRoute("/")({ component: Dashboard });
+export const Route = createFileRoute("/")({
+  head: () => ({ meta: [
+    { title: "Noventrum — Personal Finance Dashboard" },
+    { name: "description", content: "Track accounts, transactions, investments, budgets and net worth in one personal finance dashboard." },
+    { property: "og:title", content: "Noventrum — Personal Finance Dashboard" },
+    { property: "og:description", content: "Track accounts, transactions, investments, budgets and net worth in one dashboard." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
+  component: Dashboard,
+});
 
 const CHART_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-6)"];
 

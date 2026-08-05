@@ -15,6 +15,8 @@ import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { HoldingDialog } from "@/components/finance/HoldingDialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/investments")({
   head: () => ({ meta: [{ title: "Investments — Noventrum" }, { name: "description", content: "Track holdings, performance, allocation and trades." }] }),
@@ -158,8 +160,8 @@ function InvestmentsPage() {
               Every position is calculated from these entries — edit or backdate any of them and holdings, cost basis and past net worth re-sync.
             </p>
             <div className="mb-4 flex flex-wrap gap-2">
-              <input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Search symbol or notes…" className="h-9 min-w-56 rounded-md border bg-background px-3 text-sm" />
-              <select value={tradeSide} onChange={(e) => setTradeSide(e.target.value as typeof tradeSide)} className="h-9 rounded-md border bg-background px-3 text-sm"><option value="all">All sides</option><option value="buy">Buys</option><option value="sell">Sells</option></select>
+              <Input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Search symbol or notes…" className="max-w-sm" />
+              <Select value={tradeSide} onValueChange={(value) => setTradeSide(value as typeof tradeSide)}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All sides</SelectItem><SelectItem value="buy">Buys</SelectItem><SelectItem value="sell">Sells</SelectItem></SelectContent></Select>
             </div>
             {sortedTrades.length === 0 ? (
               <div className="text-sm text-muted-foreground">No trades logged yet.</div>
