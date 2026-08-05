@@ -337,8 +337,10 @@ export function monthKey(d: string) {
 
 export function monthlyCashflow(transactions: Transaction[], fx: FxMap = {}, base = "USD") {
   const map = new Map<string, { income: number; expense: number }>();
+  const today = new Date().toISOString().slice(0, 10);
   for (const t of transactions) {
     if (t.kind !== "income" && t.kind !== "expense") continue;
+    if (t.date > today) continue;
     const k = monthKey(t.date);
     const cur = map.get(k) ?? { income: 0, expense: 0 };
     const amount = toBase(t.amount, t.currency, fx, base);

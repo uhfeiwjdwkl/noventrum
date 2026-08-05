@@ -266,7 +266,11 @@ export const useFinance = create<FinanceState>()(
       },
       updateAccount: (id, patch) =>
         set((s) => ({
-          accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+          accounts: s.accounts.map((a) =>
+            a.id === id
+              ? { ...a, ...patch, balanceDate: patch.balance !== undefined ? todayISO() : a.balanceDate }
+              : a,
+          ),
         })),
       deleteAccount: (id) =>
         set((s) => ({

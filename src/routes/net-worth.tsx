@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFinance } from "@/lib/finance/store";
-import { netWorth, totalAssets, totalLiabilities, netWorthSeries, fmtCurrency, fmtPct } from "@/lib/finance/data";
+import { netWorth, totalAssets, totalLiabilities, netWorthSeries, fmtCurrency, fmtPct, accountBalanceAt } from "@/lib/finance/data";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { AddAccountDialog } from "@/components/finance/AddDialogs";
@@ -30,14 +30,16 @@ function NetWorthPage() {
   const base = useFinance((s) => s.settings.baseCurrency);
   const [addOpen, setAddOpen] = useState(false);
 
-  const nw = netWorth(accounts, fxRates, base);
-  const series = netWorthSeries(accounts, transactions, holdings, properties, physicalAssets, trades, fxRates, base, fxHistory);
+  const today = new Date().toISOString().slice(0, 10);
+  const valuedAccounts = accounts.map((a) => ({ ...a, balance: accountBalanceAt(a, transactions, today) }));
+  const nw = netWorth(valuedAccounts, fxRates, base);
+  const series = netWorthSeries(valuedAccounts, transactions, holdings, properties, physicalAssets, trades, fxRates, base, fxHistory);
   const first = series[0]?.value ?? nw;
   const change = first !== 0 ? ((nw - first) / Math.abs(first)) * 100 : 0;
-  const assets = accounts.filter((a) => a.balance > 0);
-  const liab = accounts.filter((a) => a.balance < 0);
-  const ta = totalAssets(accounts, fxRates, base);
-  const tl = totalLiabilities(accounts, fxRates, base);
+  const assets = valuedAccounts.filter((a) => a.balance > 0);
+  const liab = valuedAccounts.filter((a) => a.balance < 0);
+  const ta = totalAssets(valuedAccounts, fxRates, base);
+  const tl = totalLiabilities(valuedAccounts, fxRates, base);
 
   if (accounts.length === 0) {
     return (

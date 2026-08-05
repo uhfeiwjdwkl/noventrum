@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatCard } from "@/components/finance/StatCard";
 import { EmptyState } from "@/components/finance/EmptyState";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFinance } from "@/lib/finance/store";
-import { portfolioCost, portfolioValue, assetAllocation, realizedPL, fmtCurrency, fmtPct } from "@/lib/finance/data";
+import { portfolioCost, portfolioValue, assetAllocation, realizedPL, fmtCurrency, fmtPct, toBase } from "@/lib/finance/data";
 import type { Trade } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { LineChart as LineIcon, Trash2, RefreshCw, Pencil } from "lucide-react";
@@ -103,8 +103,9 @@ function InvestmentsPage() {
                 </TableHeader>
                 <TableBody>
                   {holdings.map((h) => {
-                    const val = h.shares * h.price;
-                    const gain = val - h.shares * h.avgCost;
+                    const nativeValue = h.shares * h.price;
+                    const val = toBase(nativeValue, h.currency, fxRates, base);
+                    const gain = val - h.shares * (h.avgCostBase || h.avgCost);
                     const gainPct = h.avgCost > 0 ? (gain / (h.shares * h.avgCost)) * 100 : 0;
                     return (
                       <TableRow key={h.id} className="group cursor-pointer" onClick={() => setSelectedSymbol(h.symbol)}>
@@ -113,7 +114,7 @@ function InvestmentsPage() {
                           <div className="text-xs text-muted-foreground truncate max-w-[180px]">{h.name}</div>
                         </TableCell>
                         <TableCell className="num">{h.shares}</TableCell>
-                        <TableCell className="text-right num">{fmtCurrency(h.price)}</TableCell>
+                        <TableCell className="text-right num">{fmtCurrency(h.price, { currency: h.currency })}</TableCell>
                         <TableCell className="text-right num font-medium">{fmtCurrency(val)}</TableCell>
                         <TableCell className={"text-right num " + (gain >= 0 ? "text-success" : "text-destructive")}>
                           {fmtCurrency(gain)} <span className="text-xs">({fmtPct(gainPct)})</span>
