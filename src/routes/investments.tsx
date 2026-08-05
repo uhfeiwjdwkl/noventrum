@@ -12,6 +12,7 @@ import type { Trade } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { LineChart as LineIcon, Trash2, RefreshCw, Pencil } from "lucide-react";
 import { BuySellDialog } from "@/components/finance/ExtraDialogs";
+import { HoldingDialog } from "@/components/finance/HoldingDialog";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -32,6 +33,9 @@ function InvestmentsPage() {
   const [tradeOpen, setTradeOpen] = useState(false);
   const [editing, setEditing] = useState<Trade | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [tradeQuery, setTradeQuery] = useState("");
+  const [tradeSide, setTradeSide] = useState<"all" | "buy" | "sell">("all");
 
   async function doRefresh() {
     setRefreshing(true);
@@ -47,7 +51,10 @@ function InvestmentsPage() {
   const plPct = pc > 0 ? (pl / pc) * 100 : 0;
   const realized = realizedPL(holdings);
   const alloc = assetAllocation(holdings);
-  const sortedTrades = [...trades].sort((a, b) => (a.date < b.date ? 1 : -1));
+  const sortedTrades = [...trades]
+    .filter((t) => tradeSide === "all" || t.side === tradeSide)
+    .filter((t) => !tradeQuery || `${t.symbol} ${t.name ?? ""} ${t.notes ?? ""}`.toLowerCase().includes(tradeQuery.toLowerCase()))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 
 
   return (
@@ -98,9 +105,9 @@ function InvestmentsPage() {
                     const gain = val - h.shares * h.avgCost;
                     const gainPct = h.avgCost > 0 ? (gain / (h.shares * h.avgCost)) * 100 : 0;
                     return (
-                      <TableRow key={h.id} className="group">
+                      <TableRow key={h.id} className="group cursor-pointer" onClick={() => setSelectedSymbol(h.symbol)}>
                         <TableCell>
-                          <Link to="/investments/$symbol" params={{ symbol: h.symbol }} className="font-semibold hover:text-primary">{h.symbol}</Link>
+                          <span className="font-semibold group-hover:text-primary">{h.symbol}</span>
                           <div className="text-xs text-muted-foreground truncate max-w-[180px]">{h.name}</div>
                         </TableCell>
                         <TableCell className="num">{h.shares}</TableCell>
@@ -110,7 +117,7 @@ function InvestmentsPage() {
                           {fmtCurrency(gain)} <span className="text-xs">({fmtPct(gainPct)})</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <button onClick={() => deleteHolding(h.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                          <button aria-label={`Delete ${h.symbol}`} onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                         </TableCell>
                       </TableRow>
                     );
@@ -147,6 +154,10 @@ function InvestmentsPage() {
             <p className="text-xs text-muted-foreground mb-4">
               Every position is calculated from these entries — edit or backdate any of them and holdings, cost basis and past net worth re-sync.
             </p>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Search symbol or notes…" className="h-9 min-w-56 rounded-md border bg-background px-3 text-sm" />
+              <select value={tradeSide} onChange={(e) => setTradeSide(e.target.value as typeof tradeSide)} className="h-9 rounded-md border bg-background px-3 text-sm"><option value="all">All sides</option><option value="buy">Buys</option><option value="sell">Sells</option></select>
+            </div>
             {sortedTrades.length === 0 ? (
               <div className="text-sm text-muted-foreground">No trades logged yet.</div>
             ) : (
@@ -197,6 +208,7 @@ function InvestmentsPage() {
           onOpenChange={(o) => !o && setEditing(null)}
         />
       )}
+      <HoldingDialog symbol={selectedSymbol} open={Boolean(selectedSymbol)} onOpenChange={(open) => !open && setSelectedSymbol(null)} />
 
     </AppShell>
   );
