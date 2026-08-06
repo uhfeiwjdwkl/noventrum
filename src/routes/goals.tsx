@@ -12,7 +12,14 @@ import { AddGoalDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/goals")({
-  head: () => ({ meta: [{ title: "Goals — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Goals — Noventrum" },
+    { name: "description", content: "Track progress toward savings targets like an emergency fund or a home deposit." },
+    { property: "og:title", content: "Goals — Noventrum" },
+    { property: "og:description", content: "Track progress toward savings targets like an emergency fund or a home deposit." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: GoalsPage,
 });
 

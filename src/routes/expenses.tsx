@@ -15,7 +15,14 @@ import { AddTransactionDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/expenses")({
-  head: () => ({ meta: [{ title: "Expenses — Noventrum" }, { name: "description", content: "Where your money goes, broken down by category." }] }),
+  head: () => ({ meta: [
+    { title: "Expenses — Noventrum" },
+    { name: "description", content: "Where your money goes, broken down by category." },
+    { property: "og:title", content: "Expenses — Noventrum" },
+    { property: "og:description", content: "Where your money goes, broken down by category." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ExpensesPage,
 });
 

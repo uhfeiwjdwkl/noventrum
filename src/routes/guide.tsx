@@ -4,7 +4,14 @@ import { Card } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/guide")({
-  head: () => ({ meta: [{ title: "Guide — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Guide — Noventrum" },
+    { name: "description", content: "How Noventrum"s transaction-based tracking, holdings and multi-currency engine work." },
+    { property: "og:title", content: "Guide — Noventrum" },
+    { property: "og:description", content: "How Noventrum"s transaction-based tracking, holdings and multi-currency engine work." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: GuidePage,
 });
 

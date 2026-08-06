@@ -13,7 +13,14 @@ import { useState } from "react";
 import { ImportStatementDialog } from "@/components/finance/ImportStatementDialog";
 
 export const Route = createFileRoute("/accounts")({
-  head: () => ({ meta: [{ title: "Accounts — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Accounts — Noventrum" },
+    { name: "description", content: "Bank, brokerage and credit accounts with live balances in your base currency." },
+    { property: "og:title", content: "Accounts — Noventrum" },
+    { property: "og:description", content: "Bank, brokerage and credit accounts with live balances in your base currency." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: AccountsPage,
 });
 

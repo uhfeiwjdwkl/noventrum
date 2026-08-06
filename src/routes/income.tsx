@@ -14,7 +14,14 @@ import { AddTransactionDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/income")({
-  head: () => ({ meta: [{ title: "Income — Noventrum" }, { name: "description", content: "All income sources — salary, dividends, interest and more." }] }),
+  head: () => ({ meta: [
+    { title: "Income — Noventrum" },
+    { name: "description", content: "All income sources — salary, dividends, interest and more." },
+    { property: "og:title", content: "Income — Noventrum" },
+    { property: "og:description", content: "All income sources — salary, dividends, interest and more." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: IncomePage,
 });
 

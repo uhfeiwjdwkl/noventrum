@@ -19,7 +19,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/investments")({
-  head: () => ({ meta: [{ title: "Investments — Noventrum" }, { name: "description", content: "Track holdings, performance, allocation and trades." }] }),
+  head: () => ({ meta: [
+    { title: "Investments — Noventrum" },
+    { name: "description", content: "Track holdings, performance, allocation and trades." },
+    { property: "og:title", content: "Investments — Noventrum" },
+    { property: "og:description", content: "Track holdings, performance, allocation and trades." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: InvestmentsPage,
 });
 
