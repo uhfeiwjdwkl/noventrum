@@ -10,7 +10,14 @@ import { monthlyCashflow, fmtCurrency } from "@/lib/finance/data";
 import { FileBarChart } from "lucide-react";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Reports — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Reports — Noventrum" },
+    { name: "description", content: "Exportable summaries of transactions, trades and dividends." },
+    { property: "og:title", content: "Reports — Noventrum" },
+    { property: "og:description", content: "Exportable summaries of transactions, trades and dividends." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ReportsPage,
 });
 

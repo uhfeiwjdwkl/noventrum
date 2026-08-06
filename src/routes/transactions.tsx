@@ -14,7 +14,14 @@ import { Search, Filter, Trash2, Receipt } from "lucide-react";
 import { AddTransactionDialog } from "@/components/finance/AddDialogs";
 
 export const Route = createFileRoute("/transactions")({
-  head: () => ({ meta: [{ title: "Transactions — Noventrum" }, { name: "description", content: "Search, filter, and manage every transaction." }] }),
+  head: () => ({ meta: [
+    { title: "Transactions — Noventrum" },
+    { name: "description", content: "Search, filter, and manage every transaction." },
+    { property: "og:title", content: "Transactions — Noventrum" },
+    { property: "og:description", content: "Search, filter, and manage every transaction." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: TransactionsPage,
 });
 

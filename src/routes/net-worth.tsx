@@ -14,7 +14,14 @@ import { AddAccountDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/net-worth")({
-  head: () => ({ meta: [{ title: "Net Worth — Noventrum" }, { name: "description", content: "Assets, liabilities and net worth growth over time." }] }),
+  head: () => ({ meta: [
+    { title: "Net Worth — Noventrum" },
+    { name: "description", content: "Assets, liabilities and net worth growth over time." },
+    { property: "og:title", content: "Net Worth — Noventrum" },
+    { property: "og:description", content: "Assets, liabilities and net worth growth over time." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: NetWorthPage,
 });
 

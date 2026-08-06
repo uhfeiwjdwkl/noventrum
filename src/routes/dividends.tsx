@@ -13,7 +13,14 @@ import { Coins, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/dividends")({
-  head: () => ({ meta: [{ title: "Dividends — Noventrum" }, { name: "description", content: "Cash dividends received across your holdings." }] }),
+  head: () => ({ meta: [
+    { title: "Dividends — Noventrum" },
+    { name: "description", content: "Cash dividends received across your holdings." },
+    { property: "og:title", content: "Dividends — Noventrum" },
+    { property: "og:description", content: "Cash dividends received across your holdings." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: DividendsPage,
 });
 

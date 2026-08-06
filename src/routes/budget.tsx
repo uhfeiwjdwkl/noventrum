@@ -13,7 +13,14 @@ import { AddBudgetDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/budget")({
-  head: () => ({ meta: [{ title: "Budget — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Budget — Noventrum" },
+    { name: "description", content: "Set monthly category limits and track spending against them." },
+    { property: "og:title", content: "Budget — Noventrum" },
+    { property: "og:description", content: "Set monthly category limits and track spending against them." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: BudgetPage,
 });
 

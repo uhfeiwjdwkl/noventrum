@@ -8,7 +8,14 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Reset password — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Reset password — Noventrum" },
+    { name: "description", content: "Choose a new password for your Noventrum account." },
+    { property: "og:title", content: "Reset password — Noventrum" },
+    { property: "og:description", content: "Choose a new password for your Noventrum account." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ResetPasswordPage,
 });
 

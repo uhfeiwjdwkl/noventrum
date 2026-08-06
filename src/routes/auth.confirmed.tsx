@@ -3,7 +3,14 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/confirmed")({
-  head: () => ({ meta: [{ title: "Email confirmed — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Email confirmed — Noventrum" },
+    { name: "description", content: "Your Noventrum email address has been confirmed." },
+    { property: "og:title", content: "Email confirmed — Noventrum" },
+    { property: "og:description", content: "Your Noventrum email address has been confirmed." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ConfirmedPage,
 });
 

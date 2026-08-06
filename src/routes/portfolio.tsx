@@ -12,7 +12,14 @@ import { BuySellDialog } from "@/components/finance/ExtraDialogs";
 import { useState } from "react";
 
 export const Route = createFileRoute("/portfolio")({
-  head: () => ({ meta: [{ title: "Portfolio — Noventrum" }] }),
+  head: () => ({ meta: [
+    { title: "Portfolio — Noventrum" },
+    { name: "description", content: "Positions, asset allocation, sector mix and performance by holding." },
+    { property: "og:title", content: "Portfolio — Noventrum" },
+    { property: "og:description", content: "Positions, asset allocation, sector mix and performance by holding." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: PortfolioPage,
 });
 
