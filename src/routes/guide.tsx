@@ -6,9 +6,9 @@ import { ExternalLink } from "lucide-react";
 export const Route = createFileRoute("/guide")({
   head: () => ({ meta: [
     { title: "Guide — Noventrum" },
-    { name: "description", content: "How Noventrum"s transaction-based tracking, holdings and multi-currency engine work." },
+    { name: "description", content: "How transaction-based tracking, holdings and the multi-currency engine work in Noventrum." },
     { property: "og:title", content: "Guide — Noventrum" },
-    { property: "og:description", content: "How Noventrum"s transaction-based tracking, holdings and multi-currency engine work." },
+    { property: "og:description", content: "How transaction-based tracking, holdings and the multi-currency engine work in Noventrum." },
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
