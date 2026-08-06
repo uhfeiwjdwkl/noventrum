@@ -914,6 +914,25 @@ export const useFinance = create<FinanceState>()(
 
         return { ...s, trades, assetMeta } as FinanceState;
       },
+      /**
+       * Persist ONLY user-entered data. Anything re-fetchable (quotes, price
+       * history, FX rates) is left out and re-fetched on load.
+       */
+      partialize: (s) => ({
+        accounts: s.accounts,
+        transactions: s.transactions,
+        trades: s.trades,
+        budgets: s.budgets,
+        goals: s.goals,
+        dividends: s.dividends,
+        properties: s.properties,
+        physicalAssets: s.physicalAssets,
+        incomeSources: s.incomeSources,
+        recurringRules: s.recurringRules,
+        watchlist: s.watchlist.map((w) => ({ symbol: w.symbol, name: w.name })),
+        assetMeta: s.assetMeta,
+        settings: s.settings,
+      }) as unknown as FinanceState,
       storage: createJSONStorage(() =>
         typeof window === "undefined"
           ? { getItem: () => null, setItem: () => {}, removeItem: () => {} }
@@ -928,6 +947,8 @@ export function hydrateFinance() {
   if (typeof window === "undefined") return;
   void useFinance.persist.rehydrate()?.then?.(() => {
     const s = useFinance.getState();
+    // Holdings are derived from the trade ledger, never persisted.
+    useFinance.setState({ holdings: deriveHoldings(s.trades, [], s.assetMeta) });
     setDisplayCurrency(s.settings.baseCurrency);
     s.runRecurring();
     void s.refreshFx();
