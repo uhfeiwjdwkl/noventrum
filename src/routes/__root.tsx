@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { hydrateFinance } from "@/lib/finance/store";
 import { KommenszlapfAuthProvider } from "@/lib/kommenszlapfAuth";
+import { CloudSync } from "@/components/finance/CloudSync";
 
 function NotFoundComponent() {
   return (
@@ -125,6 +126,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <KommenszlapfAuthProvider>
+        <CloudSync />
         <Outlet />
         <Toaster richColors position="top-right" />
       </KommenszlapfAuthProvider>

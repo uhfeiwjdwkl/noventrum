@@ -11,6 +11,7 @@ import { Building2, CreditCard, Landmark, Wallet, TrendingUp, Home, Car, Trash2 
 import { AddAccountDialog } from "@/components/finance/AddDialogs";
 import { useState } from "react";
 import { ImportStatementDialog } from "@/components/finance/ImportStatementDialog";
+import { AccountDialog } from "@/components/finance/AccountDialog";
 
 export const Route = createFileRoute("/accounts")({
   head: () => ({ meta: [
@@ -41,6 +42,7 @@ function AccountsPage() {
   const base = useFinance((s) => s.settings.baseCurrency);
   const deleteAccount = useFinance((s) => s.deleteAccount);
   const [addOpen, setAddOpen] = useState(false);
+  const [openAccountId, setOpenAccountId] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
   const valuedAccounts = accounts.map((a) => ({ ...a, balance: accountBalanceAt(a, transactions, today) }));
@@ -82,10 +84,10 @@ function AccountsPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {list.map((a) => (
-                    <Card key={a.id} className="p-5 gap-3 group relative">
+                    <Card key={a.id} className="p-5 gap-3 group relative cursor-pointer transition hover:border-primary/40" onClick={() => setOpenAccountId(a.id)}>
                       <button
                         aria-label="Delete account"
-                        onClick={() => deleteAccount(a.id)}
+                        onClick={(e) => { e.stopPropagation(); deleteAccount(a.id); }}
                         className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -107,6 +109,7 @@ function AccountsPage() {
           })}
         </>
       )}
+      <AccountDialog accountId={openAccountId} open={openAccountId !== null} onOpenChange={(next) => !next && setOpenAccountId(null)} />
     </AppShell>
   );
 }
