@@ -9,7 +9,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { UserCircle, LogOut, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useKommenszlapfAuth } from "@/lib/kommenszlapfAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { kommenszlapf as supabase } from "@/integrations/supabase/kommenszlapf";
 import { useFinance } from "@/lib/finance/store";
 
 export function KommenszlapfAccountButton({ onOpen }: { onOpen: () => void }) {

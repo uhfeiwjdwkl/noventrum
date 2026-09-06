@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { kommenszlapf as supabase } from "@/integrations/supabase/kommenszlapf";
 import { useFinance } from "@/lib/finance/store";
 
 /**

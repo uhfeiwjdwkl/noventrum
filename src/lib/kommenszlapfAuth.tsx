@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { kommenszlapf as supabase } from "@/integrations/supabase/kommenszlapf";
 
 export type KommenszlapfProfile = {
   user_id: string;
