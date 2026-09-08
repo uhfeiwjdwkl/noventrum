@@ -14,13 +14,138 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      kommenszlapf_profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      kommenszlapf_sync_requests: {
+        Row: {
+          app: string
+          created_at: string
+          device_id: string
+          id: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          app: string
+          created_at?: string
+          device_id: string
+          id?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          app?: string
+          created_at?: string
+          device_id?: string
+          id?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kommenszlapf_user_data: {
+        Row: {
+          app: string
+          change_id: string | null
+          client_ts: string
+          created_at: string
+          deleted: boolean
+          device_id: string | null
+          id: string
+          key: string
+          rev: number
+          updated_at: string
+          user_id: string
+          value: Json | null
+        }
+        Insert: {
+          app: string
+          change_id?: string | null
+          client_ts?: string
+          created_at?: string
+          deleted?: boolean
+          device_id?: string | null
+          id?: string
+          key: string
+          rev?: number
+          updated_at?: string
+          user_id: string
+          value?: Json | null
+        }
+        Update: {
+          app?: string
+          change_id?: string | null
+          client_ts?: string
+          created_at?: string
+          deleted?: boolean
+          device_id?: string | null
+          id?: string
+          key?: string
+          rev?: number
+          updated_at?: string
+          user_id?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
+      noventrum_state: {
+        Row: {
+          data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      kommenszlapf_cleanup_unverified: { Args: never; Returns: undefined }
+      kommenszlapf_sync_gc: { Args: { p_app: string }; Returns: undefined }
+      kommenszlapf_sync_pull: {
+        Args: { p_app: string; p_limit?: number; p_since?: number }
+        Returns: Json
+      }
+      kommenszlapf_sync_push: {
+        Args: { p_app: string; p_changes: Json; p_device: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
