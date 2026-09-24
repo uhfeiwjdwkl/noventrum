@@ -132,3 +132,26 @@ export const getFxRatesAt = createServerFn({ method: "POST" })
     );
     return out;
   });
+
+/** Closing price of a symbol on (or just before) an ISO date. Today → live quote. */
+export const getPriceAt = createServerFn({ method: "POST" })
+  .inputValidator((data: { symbol: string; date: string }) => data)
+  .handler(async ({ data }): Promise<{ price: number; currency: string } | null> => {
+    const sym = data.symbol.trim();
+    if (!sym) return null;
+    try {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      if (data.date >= todayIso) {
+        const q = await quoteWithFallback(sym);
+        return { price: q.price, currency: q.currency };
+      }
+      const days = Math.ceil((Date.now() - new Date(data.date).getTime()) / 86_400_000) + 10;
+      const range = days > 3650 ? "max" : days > 1825 ? "10y" : days > 365 ? "5y" : days > 90 ? "1y" : "3mo";
+      const { points, currency } = await historyWithFallback(sym, range, "1d");
+      const before = [...points].reverse().find((p) => p.date <= data.date);
+      const pt = before ?? points[0];
+      return pt ? { price: pt.close, currency } : null;
+    } catch {
+      return null;
+    }
+  });
