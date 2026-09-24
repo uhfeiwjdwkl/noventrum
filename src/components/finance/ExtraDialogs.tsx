@@ -176,16 +176,7 @@ export function BuySellDialog({
                         : t.includes("equity") || t.includes("stock") ? "stock"
                         : "other",
                     );
-                    setLoading(true);
-                    try {
-                      const q = await getQuote({ data: { symbol: m.symbol } });
-                      setPrice(q.price.toFixed(2));
-                      setCurrency(q.currency);
-                    } catch {
-                      /* keep manual entry */
-                    } finally {
-                      setLoading(false);
-                    }
+                    setSymbol(m.symbol); // price for the chosen date is fetched automatically
                   }}
                 />
               </div>
