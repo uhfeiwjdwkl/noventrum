@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
 import type { AssetClass, Trade } from "@/lib/finance/data";
-import { getQuote, getFxRateAt } from "@/lib/prices.functions";
+import { getFxRateAt, getPriceAt } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { toast } from "sonner";
@@ -75,6 +75,29 @@ export function BuySellDialog({
   const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
   const [currency, setCurrency] = useState(editTrade?.currency ?? defaultCurrency ?? useFinance.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
+
+  // Whenever the date (or asset) changes, pull that day's close from the price sources.
+  const skipFirst = useRef(!!editTrade);
+  useEffect(() => {
+    if (skipFirst.current) { skipFirst.current = false; return; }
+    const sym = symbol.trim();
+    if (!sym || !date || assetClass === "forex") return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const r = await getPriceAt({ data: { symbol: sym, date } });
+        if (!cancelled && r && r.price > 0) {
+          setPrice(r.price < 1 ? r.price.toFixed(6) : r.price.toFixed(2));
+          if (r.currency) setCurrency(r.currency);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, symbol]);
 
   // Quantity currently held for this symbol, so "Sell all" needs no maths.
   const trades = useFinance((s) => s.trades);
@@ -153,16 +176,7 @@ export function BuySellDialog({
                         : t.includes("equity") || t.includes("stock") ? "stock"
                         : "other",
                     );
-                    setLoading(true);
-                    try {
-                      const q = await getQuote({ data: { symbol: m.symbol } });
-                      setPrice(q.price.toFixed(2));
-                      setCurrency(q.currency);
-                    } catch {
-                      /* keep manual entry */
-                    } finally {
-                      setLoading(false);
-                    }
+                    setSymbol(m.symbol); // price for the chosen date is fetched automatically
                   }}
                 />
               </div>
@@ -209,7 +223,7 @@ export function BuySellDialog({
               </div>
               <Input className="mt-1.5" type="number" step="0.0001" value={shares} onChange={(e) => setShares(e.target.value)} required />
             </div>
-            <div><Label>Price</Label><Input className="mt-1.5" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required /></div>
+            <div><Label>Price{loading && <span className="ml-1 text-[10px] text-muted-foreground">fetching…</span>}</Label><Input className="mt-1.5" type="number" step="any" value={price} onChange={(e) => setPrice(e.target.value)} required /></div>
             <div><Label>Fees</Label><Input className="mt-1.5" type="number" step="0.01" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="0.00" /></div>
             <div><Label>Tax</Label><Input className="mt-1.5" type="number" step="0.01" value={tax} onChange={(e) => setTax(e.target.value)} placeholder="0.00" /></div>
           </div>
