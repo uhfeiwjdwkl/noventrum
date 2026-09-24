@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
 import type { AssetClass, Trade } from "@/lib/finance/data";
-import { getQuote, getFxRateAt, getPriceAt } from "@/lib/prices.functions";
+import { getFxRateAt, getPriceAt } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import { toast } from "sonner";
