@@ -68,7 +68,7 @@ function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
   const valuedAccounts = accounts.map((a) => ({ ...a, balance: accountBalanceAt(a, transactions, today) }));
   const nw = netWorth(valuedAccounts, fxRates, base);
-  const cashflow = monthlyCashflow(transactions, fxRates, base).slice(-12);
+  const cashflow = monthlyCashflow(transactions, fxRates, base, fxHistory).slice(-12);
   const lastMonth = cashflow[cashflow.length - 1] ?? { income: 0, expense: 0, net: 0 };
   const savingsRate = lastMonth.income > 0 ? ((lastMonth.income - lastMonth.expense) / lastMonth.income) * 100 : 0;
   const nws = netWorthSeries(valuedAccounts, transactions, holdings, properties, physicalAssets, trades, fxRates, base, fxHistory);
@@ -78,7 +78,7 @@ function Dashboard() {
   const pc = portfolioCost(holdings);
   const pReturn = pc > 0 ? ((pv - pc) / pc) * 100 : 0;
   const cats = spendingByCategory(transactions, 30, fxRates, base).slice(0, 6);
-  const savings = savingsRateSeries(transactions, fxRates, base).slice(-12);
+  const savings = savingsRateSeries(transactions, fxRates, base, fxHistory).slice(-12);
   const recent = transactions.slice(0, 6);
   const topHoldings = [...holdings].sort((a, b) => b.shares * b.price - a.shares * a.price).slice(0, 5);
 
