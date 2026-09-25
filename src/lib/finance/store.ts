@@ -735,14 +735,21 @@ export const useFinance = create<FinanceState>()(
 
       refreshFxHistory: async () => {
         const base = get().settings.baseCurrency;
+        const st = get();
         const currencies = new Set<string>();
-        get().holdings.forEach((h) => h.currency && h.currency !== base && currencies.add(h.currency));
-        get().accounts.forEach((a) => a.currency !== base && currencies.add(a.currency));
+        const add = (c?: string) => c && c !== base && currencies.add(c);
+        st.holdings.forEach((h) => add(h.currency));
+        st.accounts.forEach((a) => add(a.currency));
+        st.trades.forEach((t) => add(t.currency));
+        st.transactions.forEach((t) => add(t.currency));
+        st.properties.forEach((p) => add(p.currency));
+        st.physicalAssets.forEach((a) => add(a.currency));
+        st.dividends.forEach((d) => add(d.currency));
         let n = 0;
         for (const cur of currencies) {
           try {
             const { points } = await getHistory({
-              data: { symbol: `${cur}${base}=X`, range: "5y", interval: "1mo" },
+              data: { symbol: `${cur}${base}=X`, range: "max", interval: "1mo" },
             });
             if (points.length === 0) continue;
             const add: FxHistory = {};
@@ -953,10 +960,10 @@ export function hydrateFinance() {
     s.runRecurring();
     void s.refreshFx();
     void s.refreshWatchlist();
+    void s.refreshFxHistory();
     if (s.holdings.length === 0 && s.trades.length === 0) return;
     void s.refreshPrices();
     void s.refreshAllHistory();
     void s.backfillFxRates();
-    void s.refreshFxHistory();
   });
 }

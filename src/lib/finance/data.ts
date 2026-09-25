@@ -335,7 +335,12 @@ export function monthKey(d: string) {
   return d.slice(0, 7);
 }
 
-export function monthlyCashflow(transactions: Transaction[], fx: FxMap = {}, base = "USD") {
+export function monthlyCashflow(
+  transactions: Transaction[],
+  fx: FxMap = {},
+  base = "USD",
+  fxHist: FxHistory = {},
+) {
   const map = new Map<string, { income: number; expense: number }>();
   const today = new Date().toISOString().slice(0, 10);
   for (const t of transactions) {
@@ -343,7 +348,7 @@ export function monthlyCashflow(transactions: Transaction[], fx: FxMap = {}, bas
     if (t.date > today) continue;
     const k = monthKey(t.date);
     const cur = map.get(k) ?? { income: 0, expense: 0 };
-    const amount = toBase(t.amount, t.currency, fx, base);
+    const amount = t.amount * rateAtMonth(t.currency, k, fxHist, fx, base);
     if (amount > 0) cur.income += amount;
     else cur.expense += -amount;
     map.set(k, cur);
@@ -369,7 +374,7 @@ export function netWorthSeries(
   fxHist: FxHistory = {},
 ): { month: string; value: number }[] {
   const now = totalNetWorth(accounts, holdings, properties, physical, fx, base);
-  const cf = monthlyCashflow(transactions);
+  const cf = monthlyCashflow(transactions, fx, base, fxHist);
   if (cf.length === 0) return [];
 
   const monthPortfolio = (month: string) => {
@@ -532,8 +537,8 @@ export function describeRule(rule: RecurringRule) {
   return n === 1 ? `every ${rule.unit}` : `every ${n} ${unit}`;
 }
 
-export function savingsRateSeries(transactions: Transaction[], fx: FxMap = {}, base = "USD") {
-  return monthlyCashflow(transactions, fx, base).map((m) => ({
+export function savingsRateSeries(transactions: Transaction[], fx: FxMap = {}, base = "USD", fxHist: FxHistory = {}) {
+  return monthlyCashflow(transactions, fx, base, fxHist).map((m) => ({
     month: m.month,
     rate:
       m.income > 0
