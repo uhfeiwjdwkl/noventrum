@@ -23,11 +23,14 @@ export const Route = createFileRoute("/reports")({
 
 function ReportsPage() {
   const transactions = useFinance((s) => s.transactions);
+  const fxRates = useFinance((s) => s.fxRates);
+  const baseCur = useFinance((s) => s.settings.baseCurrency);
+  const fxHistory = useFinance((s) => s.fxHistory);
   const trades = useFinance((s) => s.trades);
   const dividends = useFinance((s) => s.dividends);
   const holdings = useFinance((s) => s.holdings);
 
-  const cf = monthlyCashflow(transactions);
+  const cf = monthlyCashflow(transactions, fxRates, baseCur, fxHistory);
   const totalIncome = cf.reduce((s, m) => s + m.income, 0);
   const totalExpense = cf.reduce((s, m) => s + m.expense, 0);
   const divTotal = dividends.reduce((s, d) => s + d.amount, 0);

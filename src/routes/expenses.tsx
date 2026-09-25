@@ -28,10 +28,13 @@ export const Route = createFileRoute("/expenses")({
 
 function ExpensesPage() {
   const transactions = useFinance((s) => s.transactions);
+  const fxRates = useFinance((s) => s.fxRates);
+  const baseCur = useFinance((s) => s.settings.baseCurrency);
+  const fxHistory = useFinance((s) => s.fxHistory);
   const budgets = useFinance((s) => s.budgets);
   const [addOpen, setAddOpen] = useState(false);
 
-  const cf = monthlyCashflow(transactions).slice(-12);
+  const cf = monthlyCashflow(transactions, fxRates, baseCur, fxHistory).slice(-12);
   const total = cf.reduce((s, m) => s + m.expense, 0);
   const avg = cf.length ? total / cf.length : 0;
   const cats = spendingByCategory(transactions);
