@@ -9,6 +9,16 @@ import { useFinance } from "@/lib/finance/store";
 import { monthlyCashflow, fmtCurrency } from "@/lib/finance/data";
 import { FileBarChart } from "lucide-react";
 
+type ActivityRow = {
+  id: string;
+  date: string;
+  kind: string;
+  description: string;
+  detail?: string;
+  amount: number;
+  currency?: string;
+};
+
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [
     { title: "Reports — Noventrum" },
@@ -42,11 +52,41 @@ function ReportsPage() {
   }, 0);
   const unrealized = holdings.reduce((s, h) => s + (h.price - h.avgCost) * h.shares, 0);
 
-  const activity = [
-    ...transactions.slice(0, 30).map((t) => ({ date: t.date, kind: t.kind, description: `${t.merchant} — ${t.category}`, amount: t.amount })),
-    ...trades.map((t) => ({ date: t.date, kind: "trade" as const, description: `${t.side.toUpperCase()} ${t.shares} ${t.symbol}`, amount: t.side === "buy" ? -t.shares * t.price : t.shares * t.price })),
-    ...dividends.map((d) => ({ date: d.date, kind: "income" as const, description: `${d.symbol} dividend`, amount: d.amount })),
-  ].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 50);
+  const activity: ActivityRow[] = [
+    ...transactions
+      .filter((t) => !t.tradeId)
+      .map((t) => ({
+        id: `transaction-${t.id}`,
+        date: t.date,
+        kind: t.kind,
+        description: t.merchant,
+        detail: t.category,
+        amount: t.amount,
+        currency: t.currency,
+      })),
+    ...trades.map((t) => {
+      const feesAndTax = (t.fees || 0) + (t.tax ?? 0);
+      const gross = t.shares * t.price;
+      return {
+        id: `trade-${t.id}`,
+        date: t.date,
+        kind: t.side,
+        description: t.symbol,
+        detail: `${t.shares.toLocaleString("en-US", { maximumFractionDigits: 8 })} shares @ ${fmtCurrency(t.price, { currency: t.currency })}`,
+        amount: t.side === "buy" ? -(gross + feesAndTax) : gross - feesAndTax,
+        currency: t.currency,
+      };
+    }),
+    ...dividends.map((d) => ({
+      id: `dividend-${d.id}`,
+      date: d.date,
+      kind: "dividend",
+      description: d.symbol,
+      detail: "Dividend",
+      amount: d.amount,
+      currency: d.currency,
+    })),
+  ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
 
   if (transactions.length === 0 && trades.length === 0 && dividends.length === 0 && holdings.length === 0) {
     return (
@@ -111,12 +151,15 @@ function ReportsPage() {
             <Table>
               <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
               <TableBody>
-                {activity.map((a, i) => (
-                  <TableRow key={i}>
+                {activity.map((a) => (
+                  <TableRow key={a.id}>
                     <TableCell className="num text-muted-foreground">{a.date}</TableCell>
                     <TableCell className="capitalize text-xs">{a.kind}</TableCell>
-                    <TableCell>{a.description}</TableCell>
-                    <TableCell className={"text-right num font-medium " + (a.amount > 0 ? "text-success" : "")}>{fmtCurrency(a.amount)}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{a.description}</div>
+                      {a.detail && <div className="text-xs text-muted-foreground">{a.detail}</div>}
+                    </TableCell>
+                    <TableCell className={"text-right num font-medium " + (a.amount > 0 ? "text-success" : "")}>{fmtCurrency(a.amount, { currency: a.currency })}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
