@@ -62,6 +62,7 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
   const [kind, setKind] = useState("all");
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [editingAccount, setEditingAccount] = useState(false);
   const [period, setPeriod] = useState<PeriodKey>("1Y");
   const [selection, setSelection] = useState<string[]>([]);
   const [prices, setPrices] = useState<Record<string, Series>>({});
@@ -192,7 +193,10 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{account.name}</DialogTitle>
+            <div className="flex items-center gap-2 pr-8">
+              <DialogTitle>{account.name}</DialogTitle>
+              <Button size="sm" variant="ghost" className="h-7 gap-1" onClick={() => setEditingAccount(true)}><Pencil className="h-3.5 w-3.5" />Edit</Button>
+            </div>
             <DialogDescription>{account.institution || "No institution"} · {account.type} · {cur}</DialogDescription>
           </DialogHeader>
 
@@ -332,32 +336,32 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
               )}
             </TableBody>
           </Table>
+          {editing && (
+            <EditTransactionDialog
+              transaction={editing}
+              onClose={() => setEditing(null)}
+              onSave={(patch) => {
+                updateTransaction(editing.id, patch);
+                setEditing(null);
+              }}
+            />
+          )}
+          {editingTrade && (
+            <BuySellDialog
+              key={editingTrade.id}
+              open
+              onOpenChange={(o) => !o && setEditingTrade(null)}
+              editTrade={editingTrade}
+            />
+          )}
+          {editingAccount && <EditAccountDialog accountId={account.id} onClose={() => setEditingAccount(false)} />}
         </DialogContent>
       </Dialog>
-
-      {editing && (
-        <EditTransactionDialog
-          transaction={editing}
-          onClose={() => setEditing(null)}
-          onSave={(patch) => {
-            updateTransaction(editing.id, patch);
-            setEditing(null);
-          }}
-        />
-      )}
-      {editingTrade && (
-        <BuySellDialog
-          key={editingTrade.id}
-          open
-          onOpenChange={(o) => !o && setEditingTrade(null)}
-          editTrade={editingTrade}
-        />
-      )}
     </>
   );
 }
 
-function EditTransactionDialog({
+export function EditTransactionDialog({
   transaction,
   onClose,
   onSave,
@@ -391,6 +395,58 @@ function EditTransactionDialog({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={() => onSave({ date, merchant, category, amount: Number(amount) || 0, notes: notes || undefined })}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function EditAccountDialog({ accountId, onClose }: { accountId: string; onClose: () => void }) {
+  const account = useFinance((s) => s.accounts.find((a) => a.id === accountId));
+  const transactions = useFinance((s) => s.transactions);
+  const updateAccount = useFinance((s) => s.updateAccount);
+  const today = new Date().toISOString().slice(0, 10);
+  const [name, setName] = useState(account?.name ?? "");
+  const [institution, setInstitution] = useState(account?.institution ?? "");
+  const [type, setType] = useState<string>(account?.type ?? "checking");
+  const [balance, setBalance] = useState(account ? String(accountBalanceAt(account, transactions, today)) : "0");
+  if (!account) return null;
+  function save() {
+    if (!account || !name.trim()) return;
+    const typed = Number(balance) || 0;
+    const current = accountBalanceAt(account, transactions, today);
+    // Shift the anchor by the difference so today's balance equals what was typed.
+    const patch: Record<string, unknown> = { name: name.trim(), institution: institution.trim(), type };
+    if (Math.abs(typed - current) > 0.0001) patch.balance = account.balance + (typed - current);
+    updateAccount(account.id, patch);
+    onClose();
+  }
+  return (
+    <Dialog open onOpenChange={(next) => !next && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit account</DialogTitle>
+          <DialogDescription>Changing today's balance keeps all logged transactions and infers earlier balances.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div><Label>Name</Label><Input className="mt-1.5" value={name} onChange={(e) => setName(e.target.value)} /></div>
+          <div><Label>Institution</Label><Input className="mt-1.5" value={institution} onChange={(e) => setInstitution(e.target.value)} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Type</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["checking", "savings", "credit", "brokerage", "cash", "loan", "mortgage"].map((t) => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Balance today ({account.currency})</Label><Input className="mt-1.5" type="number" step="0.01" value={balance} onChange={(e) => setBalance(e.target.value)} /></div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={save}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
