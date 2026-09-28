@@ -62,6 +62,7 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
   const [kind, setKind] = useState("all");
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+  const [editingAccount, setEditingAccount] = useState(false);
   const [period, setPeriod] = useState<PeriodKey>("1Y");
   const [selection, setSelection] = useState<string[]>([]);
   const [prices, setPrices] = useState<Record<string, Series>>({});
@@ -192,7 +193,10 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{account.name}</DialogTitle>
+            <div className="flex items-center gap-2 pr-8">
+              <DialogTitle>{account.name}</DialogTitle>
+              <Button size="sm" variant="ghost" className="h-7 gap-1" onClick={() => setEditingAccount(true)}><Pencil className="h-3.5 w-3.5" />Edit</Button>
+            </div>
             <DialogDescription>{account.institution || "No institution"} · {account.type} · {cur}</DialogDescription>
           </DialogHeader>
 
@@ -332,27 +336,27 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
               )}
             </TableBody>
           </Table>
+          {editing && (
+            <EditTransactionDialog
+              transaction={editing}
+              onClose={() => setEditing(null)}
+              onSave={(patch) => {
+                updateTransaction(editing.id, patch);
+                setEditing(null);
+              }}
+            />
+          )}
+          {editingTrade && (
+            <BuySellDialog
+              key={editingTrade.id}
+              open
+              onOpenChange={(o) => !o && setEditingTrade(null)}
+              editTrade={editingTrade}
+            />
+          )}
+          {editingAccount && <EditAccountDialog accountId={account.id} onClose={() => setEditingAccount(false)} />}
         </DialogContent>
       </Dialog>
-
-      {editing && (
-        <EditTransactionDialog
-          transaction={editing}
-          onClose={() => setEditing(null)}
-          onSave={(patch) => {
-            updateTransaction(editing.id, patch);
-            setEditing(null);
-          }}
-        />
-      )}
-      {editingTrade && (
-        <BuySellDialog
-          key={editingTrade.id}
-          open
-          onOpenChange={(o) => !o && setEditingTrade(null)}
-          editTrade={editingTrade}
-        />
-      )}
     </>
   );
 }
