@@ -434,8 +434,8 @@ export function AddPhysicalDialog({
 /* -------------------------------- Dividend -------------------------------- */
 
 export function AddDividendDialog({
-  trigger, open, onOpenChange,
-}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void }) {
+  trigger, open, onOpenChange, editDividend, defaultSymbol,
+}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void; editDividend?: Dividend; defaultSymbol?: string }) {
   const [internal, setInternal] = useState(false);
   const isOpen = open ?? internal;
   const setOpen = onOpenChange ?? setInternal;
