@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ValuationDialog } from "@/components/finance/ValuationDialog";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatCard } from "@/components/finance/StatCard";
 import { EmptyState } from "@/components/finance/EmptyState";
@@ -28,7 +29,8 @@ function PropertyPage() {
   const properties = useFinance((s) => s.properties);
   const accounts = useFinance((s) => s.accounts);
   const del = useFinance((s) => s.deleteProperty);
-  const addVal = useFinance((s) => s.addPropertyValuation);
+  const addVal = useFinance((s) => s.addAssetValuation);
+  const [history, setHistory] = useState<string | null>(null);
   const sell = useFinance((s) => s.updateProperty);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -97,29 +99,20 @@ function PropertyPage() {
 
                   {!p.soldDate && (
                     <div className="mt-4 flex flex-wrap gap-2 items-end">
-                      <ValuationForm onSubmit={(date, value) => { addVal(p.id, date, value); toast.success("Valuation updated"); }} />
+                      <ValuationForm onSubmit={(date, value) => { addVal("property", p.id, date, value); toast.success("Valuation updated"); }} />
                       <SellForm onSubmit={(date, price) => { sell(p.id, { soldDate: date, soldPrice: price, currentValue: price }); toast.success("Marked as sold"); }} />
+                      <Button size="sm" variant="outline" onClick={() => setHistory(p.id)}>Value history</Button>
                       <Button size="sm" variant="ghost" className="text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4 mr-1" />Delete</Button>
                     </div>
                   )}
 
-                  {p.valuations.length > 1 && (
-                    <div className="mt-4">
-                      <div className="text-xs text-muted-foreground mb-2">Valuation history</div>
-                      <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">Value</TableHead></TableRow></TableHeader>
-                        <TableBody>{p.valuations.slice().reverse().map((v, i) => (
-                          <TableRow key={i}><TableCell className="num">{v.date}</TableCell><TableCell className="text-right num">{fmtCurrency(v.value, { currency: p.currency })}</TableCell></TableRow>
-                        ))}</TableBody>
-                      </Table>
-                    </div>
-                  )}
                 </Card>
               );
             })}
           </div>
         </>
       )}
+      <ValuationDialog kind="property" id={history} open={!!history} onOpenChange={(o) => !o && setHistory(null)} />
     </AppShell>
   );
 }

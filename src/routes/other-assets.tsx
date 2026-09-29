@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ValuationDialog } from "@/components/finance/ValuationDialog";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatCard } from "@/components/finance/StatCard";
 import { EmptyState } from "@/components/finance/EmptyState";
@@ -19,6 +20,10 @@ export const Route = createFileRoute("/other-assets")({
     meta: [
       { title: "Other Assets — Noventrum" },
       { name: "description", content: "Vehicles, jewelry, art and other physical assets." },
+      { property: "og:title", content: "Other Assets — Noventrum" },
+      { property: "og:description", content: "Vehicles, jewelry, art and other physical assets with valuation history." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: OtherAssetsPage,
@@ -27,8 +32,9 @@ export const Route = createFileRoute("/other-assets")({
 function OtherAssetsPage() {
   const items = useFinance((s) => s.physicalAssets);
   const del = useFinance((s) => s.deletePhysicalAsset);
-  const update = useFinance((s) => s.updatePhysicalAsset);
+  const addVal = useFinance((s) => s.addAssetValuation);
   const [addOpen, setAddOpen] = useState(false);
+  const [history, setHistory] = useState<string | null>(null);
 
   const value = physicalValue(items);
   const cost = items.filter((a) => !a.soldDate).reduce((s, a) => s + a.purchasePrice + a.fees + a.tax, 0);
@@ -70,19 +76,20 @@ function OtherAssetsPage() {
                   return (
                     <TableRow key={a.id} className="group">
                       <TableCell>
-                        <div className="font-medium">{a.name}</div>
+                        <button className="font-medium hover:underline text-left" onClick={() => setHistory(a.id)}>{a.name}</button>
                         {a.soldDate && <Badge variant="outline" className="mt-1">Sold {a.soldDate}</Badge>}
                       </TableCell>
                       <TableCell><Badge variant="secondary">{a.category}</Badge></TableCell>
                       <TableCell className="num text-muted-foreground">{a.purchaseDate}</TableCell>
                       <TableCell className="text-right num">{fmtCurrency(c, { currency: a.currency })}</TableCell>
                       <TableCell className="text-right num">
-                        <InlineValue value={a.currentValue} currency={a.currency} onChange={(v) => { update(a.id, { currentValue: v }); toast.success("Value updated"); }} />
+                        <InlineValue value={a.currentValue} currency={a.currency} onChange={(v) => { addVal("physical", a.id, new Date().toISOString().slice(0, 10), v); toast.success("Valuation added for today"); }} />
                       </TableCell>
                       <TableCell className={"text-right num " + (change >= 0 ? "text-success" : "text-destructive")}>
                         {fmtCurrency(change, { currency: a.currency })} <span className="text-xs">({fmtPct(changePct)})</span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right whitespace-nowrap">
+                        <Button size="sm" variant="ghost" className="h-7 mr-1" onClick={() => setHistory(a.id)}>Add valuation</Button>
                         <button onClick={() => del(a.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
                       </TableCell>
                     </TableRow>
@@ -93,6 +100,7 @@ function OtherAssetsPage() {
           </Card>
         </>
       )}
+      <ValuationDialog kind="physical" id={history} open={!!history} onOpenChange={(o) => !o && setHistory(null)} />
     </AppShell>
   );
 }
