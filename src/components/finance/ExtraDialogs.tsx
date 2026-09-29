@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFinance } from "@/lib/finance/store";
-import type { AssetClass, Trade } from "@/lib/finance/data";
+import type { AssetClass, Dividend, Trade } from "@/lib/finance/data";
 import { getFxRateAt, getPriceAt } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
@@ -258,8 +258,8 @@ export function BuySellDialog({
 /* --------------------------------- Property --------------------------------- */
 
 export function AddPropertyDialog({
-  trigger, open, onOpenChange,
-}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void }) {
+  trigger, open, onOpenChange, editDividend, defaultSymbol,
+}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void; editDividend?: Dividend; defaultSymbol?: string }) {
   const [internal, setInternal] = useState(false);
   const isOpen = open ?? internal;
   const setOpen = onOpenChange ?? setInternal;
@@ -440,26 +440,28 @@ export function AddDividendDialog({
   const isOpen = open ?? internal;
   const setOpen = onOpenChange ?? setInternal;
   const addDividend = useFinance((s) => s.addDividend);
+  const updateDividend = useFinance((s) => s.updateDividend);
   const holdings = useFinance((s) => s.holdings);
   const accounts = useFinance((s) => s.accounts);
-  const brokerage = accounts.filter((a) => a.type === "brokerage" || a.type === "cash");
+  const brokerage = accounts;
 
-  const [date, setDate] = useState(today());
-  const [symbol, setSymbol] = useState("");
-  const [amount, setAmount] = useState("");
-  const [tax, setTax] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
+  const [date, setDate] = useState(editDividend?.date ?? today());
+  const [symbol, setSymbol] = useState(editDividend?.symbol ?? defaultSymbol ?? "");
+  const [amount, setAmount] = useState(editDividend ? String(editDividend.amount) : "");
+  const [tax, setTax] = useState(editDividend?.tax ? String(editDividend.tax) : "");
+  const [accountId, setAccountId] = useState(editDividend?.accountId ?? "");
+  const [currency, setCurrency] = useState(editDividend?.currency ?? useFinance.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!symbol.trim() || !amount) return;
-    addDividend({
+    const d = {
       date, symbol: symbol.trim().toUpperCase(),
       amount: Number(amount), tax: Number(tax) || 0,
       accountId: accountId || undefined, currency,
-    });
-    toast.success("Dividend logged");
+    };
+    if (editDividend) updateDividend(editDividend.id, d); else addDividend(d);
+    toast.success(editDividend ? "Dividend updated" : "Dividend logged");
     setSymbol(""); setAmount(""); setTax("");
     setOpen(false);
   }
@@ -469,7 +471,7 @@ export function AddDividendDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Log dividend</DialogTitle>
+          <DialogTitle>{editDividend ? "Edit dividend" : "Log dividend"}</DialogTitle>
           <DialogDescription>Cash dividends. Post to a brokerage account and net of withholding tax.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
@@ -477,7 +479,7 @@ export function AddDividendDialog({
             <div><Label>Date</Label><Input className="mt-1.5" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
             <div>
               <Label>Symbol</Label>
-              {holdings.length ? (
+              {holdings.length && !editDividend && !defaultSymbol ? (
                 <Select value={symbol} onValueChange={setSymbol}>
                   <SelectTrigger className="mt-1.5"><SelectValue placeholder="Pick" /></SelectTrigger>
                   <SelectContent>{holdings.map((h) => <SelectItem key={h.id} value={h.symbol}>{h.symbol}</SelectItem>)}</SelectContent>
@@ -508,7 +510,7 @@ export function AddDividendDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit">Log dividend</Button>
+            <Button type="submit">{editDividend ? "Save" : "Log dividend"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
