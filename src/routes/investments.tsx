@@ -115,7 +115,7 @@ function InvestmentsPage() {
                 </TableHeader>
                 <TableBody>
                   {holdings.map((h) => {
-                                        const val = toBase(nativeValue, h.currency, fxRates, base);
+                                        const val = toBase(h.shares * h.price, h.currency, fxRates, base);
                     const { unrealised, realised, total: gain } = holdingPL(h, fxRates, base);
                     const costBase = h.shares * (h.avgCostBase || h.avgCost);
                     const gainPct = costBase > 0 ? (unrealised / costBase) * 100 : 0;
