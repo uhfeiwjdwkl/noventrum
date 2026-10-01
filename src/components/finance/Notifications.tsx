@@ -97,7 +97,7 @@ export function useAlerts(): Alert[] {
     }
 
     for (const h of holdings) {
-      if (Math.abs(h.dayChangePct) >= 5) {
+      if (h.shares > 0 && Math.abs(h.dayChangePct) > 10) {
         out.push({
           id: `mover-${h.symbol}-${new Date().toISOString().slice(0, 10)}`,
           title: `${h.symbol} moved ${fmtPct(h.dayChangePct)} today`,

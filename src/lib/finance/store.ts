@@ -85,7 +85,18 @@ export interface Settings {
   currencies: string[];
   /** show prices in the asset's own currency instead of the base one */
   displayNative: boolean;
+  /** flag trades whose price is >10% off that day's market close */
+  autoFlag?: boolean;
+  /** symbols the user has cleared the ticker flag for */
+  flagIgnore?: string[];
+  /** user-defined dashboard charts */
+  dashboardCharts?: DashChart[];
 }
+
+export type DashStat =
+  | "netWorth" | "portfolioValue" | "portfolioGain" | "portfolioReturn"
+  | "income" | "expenses" | "netCashflow" | "savingsRate" | "cash";
+export interface DashChart { id: string; stat: DashStat; months: number; type: "line" | "bar" }
 
 export const DEFAULT_CURRENCIES = [
   "AUD",
@@ -147,6 +158,7 @@ export interface FinanceState {
   fxHistory: FxHistory;
   assetMeta: Record<string, SymbolMeta>;
   settings: Settings;
+  updateSettings: (patch: Partial<Settings>) => void;
   /** set while the ledger is being re-based onto a new default currency */
   rebasing: boolean;
 
@@ -276,6 +288,9 @@ const empty = {
     baseCurrency: "AUD",
     currencies: [...DEFAULT_CURRENCIES],
     displayNative: false,
+    autoFlag: true,
+    flagIgnore: [],
+    dashboardCharts: [],
   } as Settings,
   rebasing: false,
 };
@@ -878,6 +893,7 @@ export const useFinance = create<FinanceState>()(
             ),
           },
         })),
+      updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
       setDisplayNative: (v) =>
         set((s) => ({ settings: { ...s.settings, displayNative: v } })),
 
