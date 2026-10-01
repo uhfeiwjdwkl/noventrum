@@ -19,7 +19,10 @@ import {
   fmtCurrency,
   fmtPct,
   accountBalanceAt,
+  openHoldings,
 } from "@/lib/finance/data";
+import { TickerFlag } from "@/components/finance/TickerFlag";
+import { CustomCharts } from "@/components/finance/CustomCharts";
 import {
   Area,
   AreaChart,
@@ -80,7 +83,7 @@ function Dashboard() {
   const cats = spendingByCategory(transactions, 30, fxRates, base).slice(0, 6);
   const savings = savingsRateSeries(transactions, fxRates, base, fxHistory).slice(-12);
   const recent = transactions.slice(0, 6);
-  const topHoldings = [...holdings].sort((a, b) => b.shares * b.price - a.shares * a.price).slice(0, 5);
+  const topHoldings = [...openHoldings(holdings)].sort((a, b) => b.shares * b.price - a.shares * a.price).slice(0, 5);
 
   const isEmpty = accounts.length === 0 && transactions.length === 0 && holdings.length === 0;
 
@@ -94,7 +97,7 @@ function Dashboard() {
             description="Add a checking, savings, credit card, brokerage or loan account to begin tracking your net worth."
             action={{
               label: "Add your first account",
-              onClick: () => {},
+              onClick: () => document.getElementById("quick-add-account")?.click(),
             }}
           />
           <Card className="p-6 gap-4">
@@ -112,7 +115,7 @@ function Dashboard() {
               <li>Track your portfolio under <Link to="/investments" className="text-primary hover:underline">investments</Link></li>
             </ul>
             <div className="flex flex-wrap gap-2">
-              <AddAccountDialog trigger={<Button size="sm"><Wallet className="h-4 w-4 mr-1.5" />Add account</Button>} />
+              <AddAccountDialog trigger={<Button size="sm" id="quick-add-account"><Wallet className="h-4 w-4 mr-1.5" />Add account</Button>} />
               <AddTransactionDialog trigger={<Button size="sm" variant="outline"><TrendingUp className="h-4 w-4 mr-1.5" />Log transaction</Button>} />
             </div>
           </Card>
@@ -185,7 +188,7 @@ function Dashboard() {
                 return (
                   <div key={h.id} className="flex items-center justify-between text-sm">
                     <div className="min-w-0">
-                      <div className="font-medium">{h.symbol}</div>
+                      <div className="font-medium">{h.symbol} <TickerFlag symbol={h.symbol} /></div>
                       <div className="text-xs text-muted-foreground truncate">{h.name}</div>
                     </div>
                     <div className="text-right">
@@ -199,6 +202,8 @@ function Dashboard() {
           )}
         </Card>
       </div>
+
+      <CustomCharts />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <Card className="p-5 lg:col-span-2">
