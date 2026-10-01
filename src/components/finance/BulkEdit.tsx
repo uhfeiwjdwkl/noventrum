@@ -27,7 +27,11 @@ export function SelectBox({ checked, onChange, label }: { checked: boolean; onCh
 /** Selection state helper for ledgers. */
 export function useSelection() {
   const [sel, setSel] = useState<Map<string, LedgerRef>>(new Map());
+  const [active, setActive] = useState(false);
   return {
+    active,
+    start: () => setActive(true),
+    stop: () => { setActive(false); setSel(new Map()); },
     selected: [...sel.values()],
     has: (r: LedgerRef) => sel.has(refKey(r)),
     toggle: (r: LedgerRef, on: boolean) =>
@@ -36,6 +40,44 @@ export function useSelection() {
       setSel(() => (on ? new Map(rs.map((r) => [refKey(r), r])) : new Map())),
     clear: () => setSel(new Map()),
   };
+}
+
+/** "Bulk edit" button that reveals selection boxes; shows the action bar while active. */
+export function BulkControls({ sel, all }: { sel: ReturnType<typeof useSelection>; all: LedgerRef[] }) {
+  if (!sel.active)
+    return <Button size="sm" variant="outline" className="gap-1" onClick={sel.start}><Pencil className="h-3.5 w-3.5" />Bulk edit</Button>;
+  const allOn = all.length > 0 && all.every((r) => sel.has(r));
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+      <SelectBox label="Select all" checked={allOn} onChange={(v) => sel.setAll(all, v)} />
+      <span><strong>{sel.selected.length}</strong> selected</span>
+      <BulkActions selected={sel.selected} onDone={sel.clear} />
+      <Button size="sm" variant="ghost" onClick={sel.stop}>Done</Button>
+    </div>
+  );
+}
+
+function BulkActions({ selected, onDone }: { selected: LedgerRef[]; onDone: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const deleteTransactions = useFinance((s) => s.deleteTransactions);
+  const deleteTrades = useFinance((s) => s.deleteTrades);
+  const deleteDividends = useFinance((s) => s.deleteDividends);
+  const none = selected.length === 0;
+  function remove() {
+    if (!confirm(`Delete ${selected.length} selected entr${selected.length === 1 ? "y" : "ies"}?`)) return;
+    deleteTrades(selected.filter((r) => r.type === "trade").map((r) => r.id));
+    deleteDividends(selected.filter((r) => r.type === "div").map((r) => r.id));
+    deleteTransactions(selected.filter((r) => r.type === "txn").map((r) => r.id));
+    toast.success("Deleted");
+    onDone();
+  }
+  return (
+    <>
+      <Button size="sm" variant="outline" disabled={none} onClick={() => setEditing(true)}>Edit selected</Button>
+      <Button size="sm" variant="outline" disabled={none} className="gap-1 text-destructive" onClick={remove}><Trash2 className="h-3.5 w-3.5" />Delete</Button>
+      {editing && <BulkEditDialog selected={selected} onClose={() => setEditing(false)} onDone={onDone} />}
+    </>
+  );
 }
 
 /** Toolbar shown when ledger rows are selected. */
