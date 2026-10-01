@@ -60,6 +60,7 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
   const updateTransaction = useFinance((s) => s.updateTransaction);
   const deleteTransaction = useFinance((s) => s.deleteTransaction);
   const deleteTrade = useFinance((s) => s.deleteTrade);
+  const deleteDividend = useFinance((s) => s.deleteDividend);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [editing, setEditing] = useState<Transaction | null>(null);
