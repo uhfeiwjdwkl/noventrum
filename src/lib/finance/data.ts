@@ -711,7 +711,8 @@ export function deriveHoldings(
       history: old?.history ?? [],
     });
   }
-  return out.filter((h) => h.shares > 0.00000001 || (h.realizedBase ?? 0) !== 0);
+  // Closed positions stay in the list so their realised P/L is still counted.
+  return out;
 }
 
 /** Shares of `symbol` held on (or before) an ISO date, from the ledger. */
@@ -748,6 +749,16 @@ export function portfolioValueAt(
     total += q * priceAt(h, date) * rateAtMonth(h.currency, date.slice(0, 7), fxHist, fx, base);
   }
   return total;
+}
+
+/** Open positions only. */
+export const openHoldings = (holdings: Holding[]) => holdings.filter((h) => h.shares > 1e-8);
+
+/** Total P/L of one asset in base currency: unrealised on what's held + realised on what was sold. */
+export function holdingPL(h: Holding, fx: FxMap = {}, base = "USD") {
+  const unrealised = h.shares > 1e-8 ? toBase(h.shares * h.price, h.currency, fx, base) - h.shares * (h.avgCostBase || h.avgCost) : 0;
+  const realised = h.realizedBase ?? h.realized ?? 0;
+  return { unrealised, realised, total: unrealised + realised };
 }
 
 /** Realized P/L booked across all closed positions, in base currency. */

@@ -4,12 +4,13 @@ import { StatCard } from "@/components/finance/StatCard";
 import { EmptyState } from "@/components/finance/EmptyState";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFinance } from "@/lib/finance/store";
-import { fmtCurrency } from "@/lib/finance/data";
+import { fmtCurrency, toBase, type Dividend } from "@/lib/finance/data";
 import { AddDividendDialog } from "@/components/finance/ExtraDialogs";
-import { Coins, Trash2 } from "lucide-react";
+import { BulkControls, SelectBox, useSelection } from "@/components/finance/BulkEdit";
+import { TickerFlag } from "@/components/finance/TickerFlag";
+import { Coins, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/dividends")({
@@ -26,20 +27,33 @@ export const Route = createFileRoute("/dividends")({
 
 function DividendsPage() {
   const dividends = useFinance((s) => s.dividends);
+  const accounts = useFinance((s) => s.accounts);
+  const fxRates = useFinance((s) => s.fxRates);
+  const base = useFinance((s) => s.settings.baseCurrency);
   const del = useFinance((s) => s.deleteDividend);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Dividend | null>(null);
+  const sel = useSelection();
 
-  const gross = dividends.reduce((s, d) => s + d.amount, 0);
-  const tax = dividends.reduce((s, d) => s + (d.tax ?? 0), 0);
-  const bySymbol = new Map<string, number>();
-  dividends.forEach((d) => bySymbol.set(d.symbol, (bySymbol.get(d.symbol) ?? 0) + d.amount - (d.tax ?? 0)));
-  const cutoff12 = new Date(); cutoff12.setFullYear(cutoff12.getFullYear() - 1);
-  const ttm = dividends.filter((d) => new Date(d.date) >= cutoff12).reduce((s, d) => s + d.amount - (d.tax ?? 0), 0);
+  const b = (d: Dividend, v: number) => toBase(v, d.currency, fxRates, base);
+  const gross = dividends.reduce((s, d) => s + b(d, d.amount), 0);
+  const tax = dividends.reduce((s, d) => s + b(d, d.tax ?? 0), 0);
+  const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const ttm = dividends.filter((d) => new Date(d.date) >= cutoff).reduce((s, d) => s + b(d, d.amount - (d.tax ?? 0)), 0);
+
+  const groups = new Map<string, Dividend[]>();
+  for (const d of dividends) {
+    const k = d.symbol.toUpperCase();
+    groups.set(k, [...(groups.get(k) ?? []), d]);
+  }
+  const sorted = [...groups.entries()].sort((a, c) => a[0].localeCompare(c[0]));
+  sorted.forEach(([, list]) => list.sort((a, c) => (a.date < c.date ? 1 : -1)));
+  const all = sorted.flatMap(([, list]) => list.map((d) => ({ type: "div" as const, id: d.id })));
 
   return (
     <AppShell
       title="Dividends"
-      subtitle="Cash income from your investments."
+      subtitle="Cash income from your investments, grouped by asset."
       actions={<AddDividendDialog open={open} onOpenChange={setOpen} trigger={<Button size="sm">Log dividend</Button>} />}
     >
       {dividends.length === 0 ? (
@@ -54,37 +68,52 @@ function DividendsPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard label="Gross received" value={gross} />
             <StatCard label="Tax withheld" value={tax} />
-            <StatCard label="Net (TTM)" value={ttm} />
+            <StatCard label="Net (last 12 months)" value={ttm} />
             <StatCard label="Payouts" value={dividends.length} currency={false} />
           </div>
-
-          <Card className="p-5">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Date</TableHead><TableHead>Symbol</TableHead>
-                <TableHead className="text-right">Gross</TableHead>
-                <TableHead className="text-right">Tax</TableHead>
-                <TableHead className="text-right">Net</TableHead>
-                <TableHead />
-              </TableRow></TableHeader>
-              <TableBody>
-                {dividends.map((d) => (
-                  <TableRow key={d.id} className="group">
-                    <TableCell className="num text-muted-foreground">{d.date}</TableCell>
-                    <TableCell><Badge variant="secondary">{d.symbol}</Badge></TableCell>
-                    <TableCell className="text-right num">{fmtCurrency(d.amount, { currency: d.currency })}</TableCell>
-                    <TableCell className="text-right num text-muted-foreground">{d.tax ? fmtCurrency(d.tax, { currency: d.currency }) : "—"}</TableCell>
-                    <TableCell className="text-right num font-medium text-success">{fmtCurrency(d.amount - (d.tax ?? 0), { currency: d.currency })}</TableCell>
-                    <TableCell className="text-right">
-                      <button onClick={() => del(d.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
+          <div className="mb-3"><BulkControls sel={sel} all={all} /></div>
+          <div className="space-y-4">
+            {sorted.map(([sym, list]) => {
+              const net = list.reduce((s, d) => s + b(d, d.amount - (d.tax ?? 0)), 0);
+              return (
+                <Card key={sym} className="p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold flex items-center gap-1">{sym} <TickerFlag symbol={sym} /></div>
+                    <div className="text-sm text-muted-foreground">{list.length} payout{list.length === 1 ? "" : "s"} · net <span className="num font-medium text-success">{fmtCurrency(net)}</span></div>
+                  </div>
+                  <Table>
+                    <TableHeader><TableRow>
+                      {sel.active && <TableHead className="w-8" />}
+                      <TableHead>Date</TableHead><TableHead>Account</TableHead>
+                      <TableHead className="text-right">Gross</TableHead>
+                      <TableHead className="text-right">Tax</TableHead>
+                      <TableHead className="text-right">Net</TableHead>
+                      <TableHead />
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {list.map((d) => (
+                        <TableRow key={d.id}>
+                          {sel.active && <TableCell><SelectBox label="Select dividend" checked={sel.has({ type: "div", id: d.id })} onChange={(v) => sel.toggle({ type: "div", id: d.id }, v)} /></TableCell>}
+                          <TableCell className="num text-muted-foreground">{d.date}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{accounts.find((a) => a.id === d.accountId)?.name ?? "—"}</TableCell>
+                          <TableCell className="text-right num">{fmtCurrency(d.amount, { currency: d.currency })}</TableCell>
+                          <TableCell className="text-right num text-muted-foreground">{d.tax ? fmtCurrency(d.tax, { currency: d.currency }) : "—"}</TableCell>
+                          <TableCell className="text-right num font-medium text-success">{fmtCurrency(d.amount - (d.tax ?? 0), { currency: d.currency })}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            <button aria-label="Edit dividend" onClick={() => setEditing(d)} className="text-muted-foreground hover:text-foreground mr-2"><Pencil className="h-4 w-4" /></button>
+                            <button aria-label="Delete dividend" onClick={() => del(d.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              );
+            })}
+          </div>
         </>
       )}
+      {editing && <AddDividendDialog key={editing.id} editDividend={editing} open onOpenChange={(o) => !o && setEditing(null)} />}
     </AppShell>
   );
 }

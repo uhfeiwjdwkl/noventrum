@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 import { useFinance } from "@/lib/finance/store";
 import { accountBalanceAt, fmtCurrency, type Trade, type Transaction } from "@/lib/finance/data";
 import { getHistory } from "@/lib/prices.functions";
-import { BuySellDialog } from "@/components/finance/ExtraDialogs";
+import { BuySellDialog, AddDividendDialog } from "@/components/finance/ExtraDialogs";
+import { BulkControls, SelectBox, refForTxn, useSelection } from "@/components/finance/BulkEdit";
+import { TickerFlag } from "@/components/finance/TickerFlag";
 
 const PERIODS = [
   { key: "1M", days: 30 },
@@ -58,11 +60,15 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
   const updateTransaction = useFinance((s) => s.updateTransaction);
   const deleteTransaction = useFinance((s) => s.deleteTransaction);
   const deleteTrade = useFinance((s) => s.deleteTrade);
+  const deleteDividend = useFinance((s) => s.deleteDividend);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [editingAccount, setEditingAccount] = useState(false);
+  const [editingDiv, setEditingDiv] = useState<string | null>(null);
+  const sel = useSelection();
+  const dividendsAll = useFinance((s) => s.dividends);
   const [period, setPeriod] = useState<PeriodKey>("1Y");
   const [selection, setSelection] = useState<string[]>([]);
   const [prices, setPrices] = useState<Record<string, Series>>({});
@@ -180,7 +186,7 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
   }, [selection, valueAt]);
 
   const filtered = ledger
-    .filter((t) => kind === "all" || t.kind === kind)
+    .filter((t) => kind === "all" || (kind === "dividend" ? Boolean(t.dividendId) : t.kind === kind && !(kind === "income" && t.dividendId)))
     .filter((t) => !query || `${t.date} ${t.merchant} ${t.category} ${t.notes ?? ""}`.toLowerCase().includes(query.toLowerCase()));
 
   if (!account) return null;
@@ -288,13 +294,16 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
                 <SelectItem value="expense">Expense</SelectItem>
                 <SelectItem value="transfer">Transfer</SelectItem>
                 <SelectItem value="trade">Trade</SelectItem>
+                <SelectItem value="dividend">Dividend</SelectItem>
               </SelectContent>
             </Select>
+            <BulkControls sel={sel} all={filtered.map(refForTxn)} />
           </div>
 
           <Table>
             <TableHeader>
               <TableRow>
+                {sel.active && <TableHead className="w-8" />}
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
@@ -308,12 +317,13 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
                 const trade = t.tradeId ? trades.find((x) => x.id === t.tradeId) : undefined;
                 return (
                   <TableRow key={t.id}>
+                    {sel.active && <TableCell><SelectBox label="Select entry" checked={sel.has(refForTxn(t))} onChange={(v) => sel.toggle(refForTxn(t), v)} /></TableCell>}
                     <TableCell className="num text-muted-foreground whitespace-nowrap">{t.date}</TableCell>
                     <TableCell>
-                      <div className="font-medium">{t.merchant}</div>
+                      <div className="font-medium flex items-center gap-1">{t.merchant}{trade && <TickerFlag symbol={trade.symbol} />}</div>
                       {t.notes && <div className="text-xs text-muted-foreground">{t.notes}</div>}
                     </TableCell>
-                    <TableCell><Badge variant="secondary">{t.category}</Badge></TableCell>
+                    <TableCell><Badge variant="secondary">{t.dividendId ? "Dividend" : t.category}</Badge></TableCell>
                     <TableCell className={"text-right num font-medium " + (t.amount > 0 ? "text-success" : "")}>
                       {fmtCurrency(t.amount, { currency: t.currency ?? cur })}
                     </TableCell>
@@ -321,10 +331,10 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
                       {fmtCurrency(accountBalanceAt(account, transactions, t.date), { currency: cur })}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">
-                      <button aria-label="Edit" onClick={() => (trade ? setEditingTrade(trade) : setEditing(t))} className="text-muted-foreground hover:text-foreground mr-2">
+                      <button aria-label="Edit" onClick={() => (trade ? setEditingTrade(trade) : t.dividendId ? setEditingDiv(t.dividendId) : setEditing(t))} className="text-muted-foreground hover:text-foreground mr-2">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button aria-label="Delete" onClick={() => (trade ? deleteTrade(trade.id) : deleteTransaction(t.id))} className="text-muted-foreground hover:text-destructive">
+                      <button aria-label="Delete" onClick={() => (trade ? deleteTrade(trade.id) : t.dividendId ? deleteDividend(t.dividendId) : deleteTransaction(t.id))} className="text-muted-foreground hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </TableCell>
@@ -332,10 +342,13 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
                 );
               })}
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">No transactions on this account yet.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">No transactions on this account yet.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
+          {editingDiv && dividendsAll.find((d) => d.id === editingDiv) && (
+            <AddDividendDialog open editDividend={dividendsAll.find((d) => d.id === editingDiv)} onOpenChange={(o) => !o && setEditingDiv(null)} />
+          )}
           {editing && (
             <EditTransactionDialog
               transaction={editing}

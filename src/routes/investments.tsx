@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useFinance } from "@/lib/finance/store";
-import { portfolioCost, portfolioValue, assetAllocation, realizedPL, fmtCurrency, fmtPct, toBase } from "@/lib/finance/data";
+import { portfolioCost, portfolioValue, assetAllocation, realizedPL, fmtCurrency, fmtPct, toBase, holdingPL, openHoldings } from "@/lib/finance/data";
+import { TickerFlag } from "@/components/finance/TickerFlag";
+import { BulkControls, SelectBox, useSelection } from "@/components/finance/BulkEdit";
 import type { Trade } from "@/lib/finance/data";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { LineChart as LineIcon, Trash2, RefreshCw, Pencil } from "lucide-react";
@@ -47,6 +49,7 @@ function InvestmentsPage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [tradeQuery, setTradeQuery] = useState("");
   const [tradeSide, setTradeSide] = useState<"all" | "buy" | "sell">("all");
+  const sel = useSelection();
 
   async function doRefresh() {
     setRefreshing(true);
@@ -92,11 +95,11 @@ function InvestmentsPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            <StatCard label="Portfolio value" value={pv} change={plPct} hint="all time" />
-            <StatCard label="Cost basis" value={pc} />
-            <StatCard label="Unrealized P/L" value={pl} />
-            <StatCard label="Realized P/L" value={realized} />
-            <StatCard label="Holdings" value={holdings.length} currency={false} />
+            <StatCard label="Portfolio value" value={pv} change={plPct} hint="unrealised" />
+            <StatCard label="Total P/L" value={pl + realized} />
+            <StatCard label="Unrealised P/L" value={pl} />
+            <StatCard label="Realised P/L" value={realized} />
+            <StatCard label="Open holdings" value={openHoldings(holdings).length} currency={false} />
           </div>
 
 
@@ -107,26 +110,28 @@ function InvestmentsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Symbol</TableHead><TableHead>Shares</TableHead><TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-right">Value</TableHead><TableHead className="text-right">P/L</TableHead><TableHead />
+                    <TableHead className="text-right">Value</TableHead><TableHead className="text-right">Total P/L</TableHead><TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {holdings.map((h) => {
-                    const nativeValue = h.shares * h.price;
-                    const val = toBase(nativeValue, h.currency, fxRates, base);
-                    const gain = val - h.shares * (h.avgCostBase || h.avgCost);
-                    const gainPct = h.avgCost > 0 ? (gain / (h.shares * h.avgCost)) * 100 : 0;
+                                        const val = toBase(nativeValue, h.currency, fxRates, base);
+                    const { unrealised, realised, total: gain } = holdingPL(h, fxRates, base);
+                    const costBase = h.shares * (h.avgCostBase || h.avgCost);
+                    const gainPct = costBase > 0 ? (unrealised / costBase) * 100 : 0;
+                    const closed = h.shares <= 1e-8;
                     return (
                       <TableRow key={h.id} className="group cursor-pointer" onClick={() => setSelectedSymbol(h.symbol)}>
                         <TableCell>
-                          <span className="font-semibold group-hover:text-primary">{h.symbol}</span>
+                          <span className="font-semibold group-hover:text-primary">{h.symbol}</span> <TickerFlag symbol={h.symbol} dismissible />{closed && <Badge variant="outline" className="ml-1 text-[10px]">Closed</Badge>}
                           <div className="text-xs text-muted-foreground truncate max-w-[180px]">{h.name}</div>
                         </TableCell>
                         <TableCell className="num">{h.shares}</TableCell>
                         <TableCell className="text-right num">{fmtCurrency(h.price, { currency: h.currency })}</TableCell>
                         <TableCell className="text-right num font-medium">{fmtCurrency(val)}</TableCell>
                         <TableCell className={"text-right num " + (gain >= 0 ? "text-success" : "text-destructive")}>
-                          {fmtCurrency(gain)} <span className="text-xs">({fmtPct(gainPct)})</span>
+                          {fmtCurrency(gain)} {!closed && <span className="text-xs">({fmtPct(gainPct)})</span>}
+                          {realised !== 0 && <div className="text-[11px] text-muted-foreground">incl. {fmtCurrency(realised)} realised</div>}
                         </TableCell>
                         <TableCell className="text-right">
                           <button aria-label={`Delete ${h.symbol}`} onClick={(e) => { e.stopPropagation(); deleteHolding(h.id); }} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
@@ -169,6 +174,7 @@ function InvestmentsPage() {
             <div className="mb-4 flex flex-wrap gap-2">
               <Input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Search symbol or notes…" className="max-w-sm" />
               <Select value={tradeSide} onValueChange={(value) => setTradeSide(value as typeof tradeSide)}><SelectTrigger className="w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All sides</SelectItem><SelectItem value="buy">Buys</SelectItem><SelectItem value="sell">Sells</SelectItem></SelectContent></Select>
+              <BulkControls sel={sel} all={sortedTrades.map((t) => ({ type: "trade" as const, id: t.id }))} />
             </div>
             {sortedTrades.length === 0 ? (
               <div className="text-sm text-muted-foreground">No trades logged yet.</div>
@@ -176,6 +182,7 @@ function InvestmentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {sel.active && <TableHead className="w-8" />}
                     <TableHead>Date</TableHead><TableHead>Asset</TableHead><TableHead>Side</TableHead>
                     <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Fees / Tax</TableHead>
@@ -189,8 +196,9 @@ function InvestmentsPage() {
                     const total = t.side === "buy" ? t.shares * t.price + extra : t.shares * t.price - extra;
                     return (
                       <TableRow key={t.id} className="group">
+                        {sel.active && <TableCell><SelectBox label="Select trade" checked={sel.has({ type: "trade", id: t.id })} onChange={(v) => sel.toggle({ type: "trade", id: t.id }, v)} /></TableCell>}
                         <TableCell className="num text-muted-foreground">{t.date}</TableCell>
-                        <TableCell className="font-medium">{t.symbol}</TableCell>
+                        <TableCell className="font-medium">{t.symbol} <TickerFlag symbol={t.symbol} /></TableCell>
                         <TableCell>
                           <Badge variant={t.side === "buy" ? "secondary" : "outline"} className="capitalize">{t.side}</Badge>
                         </TableCell>

@@ -5,6 +5,27 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { useFinance as useFinanceFlag } from "@/lib/finance/store";
+
+function FlagSetting() {
+  const on = useFinanceFlag((s) => s.settings.autoFlag ?? true);
+  const ignored = useFinanceFlag((s) => s.settings.flagIgnore ?? []);
+  const update = useFinanceFlag((s) => s.updateSettings);
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <div className="font-medium">Flag possible wrong tickers</div>
+        <div className="text-sm text-muted-foreground">
+          Flags an asset when a trade price is over 10% away from that day&apos;s market price.
+          {ignored.length > 0 && (
+            <> Cleared: {ignored.join(", ")}. <button type="button" className="text-primary hover:underline" onClick={() => update({ flagIgnore: [] })}>Restore</button></>
+          )}
+        </div>
+      </div>
+      <Switch checked={on} onCheckedChange={(v) => update({ autoFlag: v })} aria-label="Flag possible wrong tickers" />
+    </div>
+  );
+}
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -153,6 +174,7 @@ function SettingsPage() {
               <Switch defaultChecked={on as boolean} />
             </div>
           ))}
+          <FlagSetting />
         </Card>
 
         <Separator className="lg:col-span-3" />

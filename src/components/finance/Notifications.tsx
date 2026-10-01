@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useFinance } from "@/lib/finance/store";
 import { fmtCurrency, fmtPct, describeRule } from "@/lib/finance/data";
+import { Flag } from "lucide-react";
+import { useTickerFlagScanner, useTickerMismatches } from "@/components/finance/TickerFlag";
 
 type Alert = {
   id: string;
@@ -32,9 +34,16 @@ export function useAlerts(): Alert[] {
   const accounts = useFinance((s) => s.accounts);
   const holdings = useFinance((s) => s.holdings);
   const rules = useFinance((s) => s.recurringRules);
+  useTickerFlagScanner();
+  const mismatches = useTickerMismatches();
 
   return useMemo(() => {
     const out: Alert[] = [];
+    const flagged = Array.from(new Set(mismatches.map((m) => m.symbol)));
+    for (const sym of flagged) {
+      const n = mismatches.filter((m) => m.symbol === sym).length;
+      out.push({ id: `flag-${sym}-${n}`, title: `Check ticker ${sym}`, detail: `${n} trade${n === 1 ? "" : "s"} priced over 10% from the market that day`, to: "/investments", tone: "warn", icon: Flag });
+    }
 
     for (const b of budgets) {
       const pct = b.limit > 0 ? (b.spent / b.limit) * 100 : 0;
@@ -97,7 +106,7 @@ export function useAlerts(): Alert[] {
     }
 
     for (const h of holdings) {
-      if (Math.abs(h.dayChangePct) >= 5) {
+      if (h.shares > 0 && Math.abs(h.dayChangePct) > 10) {
         out.push({
           id: `mover-${h.symbol}-${new Date().toISOString().slice(0, 10)}`,
           title: `${h.symbol} moved ${fmtPct(h.dayChangePct)} today`,
@@ -122,7 +131,7 @@ export function useAlerts(): Alert[] {
     }
 
     return out;
-  }, [budgets, goals, accounts, holdings, rules]);
+  }, [budgets, goals, accounts, holdings, rules, mismatches]);
 }
 
 export function NotificationsMenu() {
