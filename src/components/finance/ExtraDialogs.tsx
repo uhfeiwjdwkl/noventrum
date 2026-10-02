@@ -1,3 +1,4 @@
+import { OwnSymbolSearch } from "@/components/finance/OwnSymbolSearch";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -472,7 +473,7 @@ export function AddDividendDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editDividend ? "Edit dividend" : "Log dividend"}</DialogTitle>
-          <DialogDescription>Cash dividends. Post to a brokerage account and net of withholding tax.</DialogDescription>
+          <DialogDescription>Cash dividends. Always written to an account ledger (defaults to where the asset is held), net of withholding tax.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid grid-cols-3 gap-3">
@@ -480,10 +481,7 @@ export function AddDividendDialog({
             <div>
               <Label>Symbol</Label>
               {holdings.length && !editDividend && !defaultSymbol ? (
-                <Select value={symbol} onValueChange={setSymbol}>
-                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Pick" /></SelectTrigger>
-                  <SelectContent>{holdings.map((h) => <SelectItem key={h.id} value={h.symbol}>{h.symbol}</SelectItem>)}</SelectContent>
-                </Select>
+                <div className="mt-1.5"><OwnSymbolSearch value={symbol} onChange={setSymbol} onSelect={(h) => { setSymbol(h.symbol); if (h.currency) setCurrency(h.currency); }} /></div>
               ) : (
                 <Input className="mt-1.5" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL" required />
               )}
@@ -502,7 +500,7 @@ export function AddDividendDialog({
                 <div className="text-xs text-muted-foreground mt-2">None linked</div>
               ) : (
                 <Select value={accountId} onValueChange={setAccountId}>
-                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Optional" /></SelectTrigger>
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Where the asset is held" /></SelectTrigger>
                   <SelectContent>{brokerage.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
                 </Select>
               )}

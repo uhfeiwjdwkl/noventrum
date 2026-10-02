@@ -6,6 +6,7 @@ import {
   ResponsiveContainer,
   Scatter,
   ReferenceArea,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
@@ -13,8 +14,9 @@ import {
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { fmtCurrency } from "@/lib/finance/data";
-import type { Trade } from "@/lib/finance/data";
+import type { Dividend, Trade } from "@/lib/finance/data";
 import { getHistory, type HistoryPoint } from "@/lib/prices.functions";
 
 /** Selectable look-back windows mapped to Yahoo range/interval pairs. */
@@ -25,9 +27,41 @@ export const RANGES = [
   { key: "1Y", range: "1y", interval: "1d" },
   { key: "5Y", range: "5y", interval: "1wk" },
   { key: "MAX", range: "max", interval: "1mo" },
+  { key: "Since first", range: "", interval: "" },
 ] as const;
 
 export type RangeKey = (typeof RANGES)[number]["key"];
+
+function rangeSince(from: string) {
+  const days = Math.ceil((Date.now() - new Date(from).getTime()) / 86_400_000) + 7;
+  if (days <= 31) return { range: "1mo", interval: "1d" };
+  if (days <= 92) return { range: "3mo", interval: "1d" };
+  if (days <= 366) return { range: "1y", interval: "1d" };
+  if (days <= 1826) return { range: "5y", interval: "1wk" };
+  return { range: "max", interval: "1mo" };
+}
+
+/**
+ * What the position is worth to you at each date: shares held x close
+ * + cash returned (sales, dividends net of tax) - cash invested (buys incl. fees).
+ * Can go negative.
+ */
+function positionWorth(points: HistoryPoint[], trades: Trade[], dividends: Dividend[]): HistoryPoint[] {
+  const tr = [...trades].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const dv = [...dividends].sort((a, b) => (a.date < b.date ? -1 : 1));
+  let i = 0, j = 0, shares = 0, cash = 0;
+  return points.map((p) => {
+    while (i < tr.length && tr[i].date <= p.date) {
+      const t = tr[i++];
+      const gross = t.shares * t.price;
+      const costs = (t.fees || 0) + (t.tax || 0);
+      if (t.side === "buy") { shares += t.shares; cash -= gross + costs; }
+      else { shares -= t.shares; cash += gross - costs; }
+    }
+    while (j < dv.length && dv[j].date <= p.date) { const d = dv[j++]; cash += d.amount - (d.tax ?? 0); }
+    return { ...p, close: Math.round((Math.max(0, shares) * p.close + cash) * 100) / 100 };
+  });
+}
 
 interface Point extends HistoryPoint {
   buy?: number;
@@ -55,6 +89,7 @@ export function PriceChart({
   symbol,
   currency,
   trades = [],
+  dividends = [],
   height = 320,
   defaultRange = "1Y",
   className,
@@ -62,6 +97,7 @@ export function PriceChart({
   symbol: string;
   currency?: string;
   trades?: Trade[];
+  dividends?: Dividend[];
   height?: number;
   defaultRange?: RangeKey;
   className?: string;
@@ -72,16 +108,23 @@ export function PriceChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selection, setSelection] = useState<string[]>([]);
+  const [mine, setMine] = useState(false);
+  const firstActivity = useMemo(() => {
+    const ds = [...trades.map((t) => t.date), ...dividends.map((d) => d.date)].sort();
+    return ds[0];
+  }, [trades, dividends]);
+  const ranges = RANGES.filter((r) => r.key !== "Since first" || firstActivity);
 
   useEffect(() => {
-    const cfg = RANGES.find((r) => r.key === rangeKey)!;
+    const base = RANGES.find((r) => r.key === rangeKey)!;
+    const cfg = base.key === "Since first" ? (firstActivity ? rangeSince(firstActivity) : RANGES[3]) : base;
     let cancelled = false;
     setLoading(true);
     setError(false);
     getHistory({ data: { symbol, range: cfg.range, interval: cfg.interval } })
       .then((r) => {
         if (cancelled) return;
-        setPoints(r.points);
+        setPoints(base.key === "Since first" && firstActivity ? r.points.filter((p) => p.date >= firstActivity) : r.points);
         if (r.currency) setCur(r.currency);
         setError(r.points.length === 0);
       })
@@ -90,9 +133,12 @@ export function PriceChart({
     return () => {
       cancelled = true;
     };
-  }, [symbol, rangeKey]);
+  }, [symbol, rangeKey, firstActivity]);
 
-  const data = useMemo(() => withTradeMarkers(points, trades), [points, trades]);
+  const data = useMemo(
+    () => withTradeMarkers(mine ? positionWorth(points, trades, dividends) : points, trades),
+    [points, trades, dividends, mine],
+  );
   const comparison = useMemo(() => {
     if (selection.length !== 2) return null;
     const a = data.find((p) => p.date === selection[0]);
@@ -101,18 +147,26 @@ export function PriceChart({
     const first = a.date < b.date ? a : b;
     const last = a.date < b.date ? b : a;
     const value = last.close - first.close;
-    return { first, last, value, pct: first.close ? (value / first.close) * 100 : 0 };
+    return { first, last, value, pct: first.close ? (value / Math.abs(first.close)) * 100 : 0 };
   }, [data, selection]);
 
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="text-sm text-muted-foreground">
-          {symbol} price history
+          {mine ? `What ${symbol} is worth to you` : `${symbol} price history`}
           {trades.length > 0 && <span className="ml-2 text-xs">• dots mark your buys and sells</span>}
+          {mine && <div className="text-xs">Holdings value + sales and dividends received − money put in</div>}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        {trades.length > 0 && (
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+            <Switch checked={mine} onCheckedChange={(v) => { setMine(v); setSelection([]); }} aria-label="Show my position value" />
+            My position
+          </label>
+        )}
         <div className="inline-flex rounded-md border border-border overflow-hidden">
-          {RANGES.map((r) => (
+          {ranges.map((r) => (
             <Button
               key={r.key}
               type="button"
@@ -129,6 +183,7 @@ export function PriceChart({
               {r.key}
             </Button>
           ))}
+        </div>
         </div>
       </div>
       {comparison && (
@@ -197,6 +252,7 @@ export function PriceChart({
                   );
                 }}
               />
+              {mine && <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeDasharray="4 4" />}
               <Area
                 type="monotone"
                 dataKey="close"
