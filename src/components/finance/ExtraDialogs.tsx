@@ -481,7 +481,7 @@ export function AddDividendDialog({
             <div>
               <Label>Symbol</Label>
               {holdings.length && !editDividend && !defaultSymbol ? (
-                <div className="mt-1.5"><OwnSymbolSearch value={symbol} onChange={setSymbol} onSelect={(h) => { setSymbol(h.symbol); setCurrency(h.currency); }} /></div>
+                <div className="mt-1.5"><OwnSymbolSearch value={symbol} onChange={setSymbol} onSelect={(h) => { setSymbol(h.symbol); if (h.currency) setCurrency(h.currency); }} /></div>
               ) : (
                 <Input className="mt-1.5" value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL" required />
               )}
