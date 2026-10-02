@@ -20,7 +20,8 @@ const STATS: Record<DashStat, { label: string; pct?: boolean }> = {
   savingsRate: { label: "Savings rate", pct: true },
   cash: { label: "Cash & accounts" },
 };
-const PERIODS = [3, 6, 8, 12, 24, 36, 60];
+const PERIODS = [3, 6, 8, 12, 24, 36, 60, 0];
+const periodLabel = (m: number) => (m === 0 ? "since first activity" : `last ${m} months`);
 
 function useSeries(stat: DashStat, months: number) {
   const s = useFinance();
@@ -64,6 +65,10 @@ function useSeries(stat: DashStat, months: number) {
     case "netCashflow": data = cfSeries("net"); break;
     case "savingsRate": data = savingsRateSeries(s.transactions, s.fxRates, base, s.fxHistory).map((r) => ({ month: r.month, value: r.rate })); break;
   }
+  if (months === 0) {
+    const i = data.findIndex((d) => d.value !== 0);
+    return i < 0 ? [] : data.slice(i);
+  }
   return data.slice(-months);
 }
 
@@ -78,7 +83,7 @@ function ChartCard({ chart, onRemove }: { chart: DashChart; onRemove: () => void
     <Card className="p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <div className="text-sm text-muted-foreground">{meta.label} · last {chart.months} months</div>
+          <div className="text-sm text-muted-foreground">{meta.label} · {periodLabel(chart.months)}</div>
           <div className="text-xl font-semibold num mt-1">{fmt(last)}</div>
           {data.length > 1 && (
             <div className={"text-xs num " + (diff >= 0 ? "text-success" : "text-destructive")}>
@@ -157,7 +162,7 @@ export function CustomCharts() {
                 <Select value={String(months)} onValueChange={(v) => setMonths(Number(v))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {PERIODS.map((p) => <SelectItem key={p} value={String(p)}>Last {p} months</SelectItem>)}
+                    {PERIODS.map((p) => <SelectItem key={p} value={String(p)}>{p === 0 ? "Since first activity" : `Last ${p} months`}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

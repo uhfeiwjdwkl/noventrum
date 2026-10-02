@@ -22,7 +22,7 @@ const PERIODS = [
   { key: "6M", days: 182 },
   { key: "1Y", days: 365 },
   { key: "5Y", days: 1826 },
-  { key: "MAX", days: Infinity },
+  { key: "Since first", days: Infinity },
 ] as const;
 type PeriodKey = (typeof PERIODS)[number]["key"];
 
