@@ -69,7 +69,7 @@ export function HoldingDialog({ symbol, open, onOpenChange }: { symbol: string |
               <Button size="sm" variant="outline" onClick={() => setTradeSide("sell")}>Sell</Button>
             </div>
           </div>
-          <PriceChart symbol={symbol} currency={holding.currency} trades={allTrades} height={360} />
+          <PriceChart symbol={symbol} currency={holding.currency} trades={allTrades} dividends={dividends.filter((d) => d.symbol.toUpperCase() === symbol.toUpperCase())} height={360} />
           <div className="flex flex-wrap gap-2">
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes or date…" className="max-w-sm" />
             <Select value={side} onValueChange={setSide}>

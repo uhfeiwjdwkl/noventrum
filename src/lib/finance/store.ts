@@ -73,6 +73,12 @@ function divTxn(d: Dividend): Transaction | null {
     dividendId: d.id,
   };
 }
+/** Account a dividend lands in when none is picked: where the asset was last traded, else the first account. */
+function dividendAccount(s: { trades: { symbol: string; accountId?: string; date: string }[]; accounts: { id: string }[] }, symbol: string) {
+  const sym = symbol.toUpperCase();
+  const t = s.trades.filter((x) => x.symbol.toUpperCase() === sym && x.accountId).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  return t?.accountId || s.accounts[0]?.id;
+}
 /** Matches a dividend's cash entry (legacy entries had no dividendId). */
 function isDivTxn(t: Transaction, d: Dividend) {
   if (t.dividendId) return t.dividendId === d.id;
@@ -559,7 +565,7 @@ export const useFinance = create<FinanceState>()(
       deleteGoal: (id) => set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
 
       addDividend: (d) => {
-        const div: Dividend = { ...d, id: uid() };
+        const div: Dividend = { ...d, id: uid(), accountId: d.accountId || dividendAccount(get(), d.symbol) };
         set((s) => {
           const txn = divTxn(div);
           const transactions = txn
@@ -573,7 +579,8 @@ export const useFinance = create<FinanceState>()(
         set((s) => {
           const old = s.dividends.find((d) => d.id === id);
           if (!old) return {};
-          const next: Dividend = { ...old, ...patch, id, symbol: (patch.symbol ?? old.symbol).toUpperCase() };
+          const merged: Dividend = { ...old, ...patch, id, symbol: (patch.symbol ?? old.symbol).toUpperCase() };
+          const next: Dividend = { ...merged, accountId: merged.accountId || dividendAccount(s, merged.symbol) };
           const rest = s.transactions.filter((t) => !isDivTxn(t, old));
           const txn = divTxn(next);
           return {
