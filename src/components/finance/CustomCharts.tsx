@@ -123,8 +123,10 @@ function ChartCard({ chart, onRemove }: { chart: DashChart; onRemove: () => void
   );
 }
 
+const NO_CHARTS: DashChart[] = [];
+
 export function CustomCharts() {
-  const charts = useFinance((s) => s.settings.dashboardCharts ?? []);
+  const charts = useFinance((s) => s.settings.dashboardCharts) ?? NO_CHARTS;
   const updateSettings = useFinance((s) => s.updateSettings);
   const [open, setOpen] = useState(false);
   const [stat, setStat] = useState<DashStat>("portfolioValue");
