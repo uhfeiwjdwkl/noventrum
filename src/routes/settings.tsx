@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useFinance as useFinanceFlag } from "@/lib/finance/store";
 
+const EMPTY: string[] = [];
+
 function FlagSetting() {
   const on = useFinanceFlag((s) => s.settings.autoFlag ?? true);
-  const ignored = useFinanceFlag((s) => s.settings.flagIgnore ?? []);
+  const ignored = useFinanceFlag((s) => s.settings.flagIgnore) ?? EMPTY;
   const update = useFinanceFlag((s) => s.updateSettings);
   return (
     <div className="flex items-center justify-between gap-4">

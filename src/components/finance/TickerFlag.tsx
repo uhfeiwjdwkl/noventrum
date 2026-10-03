@@ -5,6 +5,8 @@ import { useFinance } from "@/lib/finance/store";
 import { getPriceAt } from "@/lib/prices.functions";
 import type { Trade } from "@/lib/finance/data";
 
+const EMPTY: string[] = [];
+
 /** A trade whose entered price is >10% away from that day's market close. */
 export interface TradeMismatch {
   tradeId: string;
@@ -75,7 +77,7 @@ export function useTickerMismatches(symbol?: string): TradeMismatch[] {
   const results = useFlagCache((s) => s.results);
   const trades = useFinance((s) => s.trades);
   const enabled = useFinance((s) => s.settings.autoFlag ?? true);
-  const ignore = useFinance((s) => s.settings.flagIgnore ?? []);
+  const ignore = useFinance((s) => s.settings.flagIgnore) ?? EMPTY;
   if (!enabled) return [];
   const sym = symbol?.toUpperCase();
   const out: TradeMismatch[] = [];
@@ -91,7 +93,7 @@ export function useTickerMismatches(symbol?: string): TradeMismatch[] {
 /** Small flag shown beside an asset wherever it appears. */
 export function TickerFlag({ symbol, dismissible = false }: { symbol: string; dismissible?: boolean }) {
   const list = useTickerMismatches(symbol);
-  const ignore = useFinance((s) => s.settings.flagIgnore ?? []);
+  const ignore = useFinance((s) => s.settings.flagIgnore) ?? EMPTY;
   const updateSettings = useFinance((s) => s.updateSettings);
   if (!list.length) return null;
   const worst = list.reduce((a, b) => (Math.abs(b.diffPct) > Math.abs(a.diffPct) ? b : a));
