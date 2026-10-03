@@ -113,7 +113,8 @@ function parseSuperhero(rows: Row[], fallbackCurrency: string): Parsed[] {
     const merchant = (r.merchant || r.description || "").trim();
     const date = parseDate(r.date || r.transaction_date);
     const amount = parseMoney(r.amount || r.credit || (r.debit ? `-${r.debit}` : ""));
-    const base = { key: `${i}`, date, merchant, category, amount, currency: currencyFrom(r.amount || "", fallbackCurrency) } as Parsed;
+    // Superhero distinguishes A$ (AUD) from plain $ (USD) in the same statement.
+    const base = { key: `${i}`, date, merchant, category, amount, currency: currencyFrom(r.amount || "", "USD") } as Parsed;
     if (!date || !Number.isFinite(amount)) return;
     const cat = category.toLowerCase();
 
