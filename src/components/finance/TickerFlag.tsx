@@ -5,6 +5,8 @@ import { useFinance } from "@/lib/finance/store";
 import { getPriceAt } from "@/lib/prices.functions";
 import type { Trade } from "@/lib/finance/data";
 
+const EMPTY: string[] = [];
+
 /** A trade whose entered price is >10% away from that day's market close. */
 export interface TradeMismatch {
   tradeId: string;
