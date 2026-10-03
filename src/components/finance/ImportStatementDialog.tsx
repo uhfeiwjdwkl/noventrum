@@ -300,31 +300,28 @@ export function ImportStatementDialog({ trigger }: { trigger?: ReactNode }) {
     }
   }
 
-  // Duplicate review runs once an account is chosen.
-  function reviewDuplicates(target: string) {
-    setParsed((prev) =>
-      prev.map((p) => {
-        if (p.kind === "skip") return p;
-        let dup = "";
-        let dupTradeId: string | undefined;
-        let dupTxnId: string | undefined;
-        let dupDivId: string | undefined;
-        if (p.kind === "trade") {
-          const hit = trades.find((t) => t.accountId === target && t.date === p.date && t.symbol === p.symbol && Math.abs(t.shares - (p.shares ?? 0)) < 1e-6);
-          if (hit) { dup = `trade ${p.symbol} ×${p.shares} on ${p.date}`; dupTradeId = hit.id; }
-        } else if (p.kind === "dividend") {
-          const hit = dividends.find((d) => (d.accountId || target) === target && d.date === p.date && d.symbol === p.symbol && Math.abs(d.amount - Math.abs(p.amount)) < 0.005);
-          if (hit) { dup = `dividend ${p.symbol} on ${p.date}`; dupDivId = hit.id; }
-        } else {
-          const hit = transactions.find((t) => t.accountId === target && t.date === p.date && Math.abs(t.amount - p.amount) < 0.005 && (norm(t.merchant).includes(norm(p.merchant).slice(0, 20)) || norm(p.merchant).includes(norm(t.merchant).slice(0, 20))));
-          if (hit) { dup = `${p.currency} ${p.amount} on ${p.date}`; dupTxnId = hit.id; }
-        }
-        if (!dup) return { ...p, dup: undefined, dupTradeId: undefined, dupTxnId: undefined, dupDivId: undefined };
-        // keep the previously chosen action if the user already decided
-        const prior = prev.find((q) => q.key === p.key);
-        return { ...p, dup, dupTradeId, dupTxnId, dupDivId, action: prior && prior.dup === dup && prior.action !== "add" ? prior.action : "add" };
-      }),
-    );
+  // Pure duplicate review: flags rows that already exist in the chosen account.
+  function reviewed(list: Parsed[], target: string): Parsed[] {
+    return list.map((p) => {
+      if (p.kind === "skip") return p;
+      let dup = "";
+      let dupTradeId: string | undefined;
+      let dupTxnId: string | undefined;
+      let dupDivId: string | undefined;
+      if (p.kind === "trade") {
+        const hit = trades.find((t) => t.accountId === target && t.date === p.date && t.symbol === p.symbol && Math.abs(t.shares - (p.shares ?? 0)) < 1e-6);
+        if (hit) { dup = `trade ${p.symbol} ×${p.shares} on ${p.date}`; dupTradeId = hit.id; }
+      } else if (p.kind === "dividend") {
+        const hit = dividends.find((d) => (d.accountId || target) === target && d.date === p.date && d.symbol === p.symbol && Math.abs(d.amount - Math.abs(p.amount)) < 0.005);
+        if (hit) { dup = `dividend ${p.symbol} on ${p.date}`; dupDivId = hit.id; }
+      } else {
+        const hit = transactions.find((t) => t.accountId === target && t.date === p.date && Math.abs(t.amount - p.amount) < 0.005 && (norm(t.merchant).includes(norm(p.merchant).slice(0, 20)) || norm(p.merchant).includes(norm(t.merchant).slice(0, 20))));
+        if (hit) { dup = `${p.currency} ${p.amount} on ${p.date}`; dupTxnId = hit.id; }
+      }
+      if (!dup) return { ...p, dup: undefined, dupTradeId: undefined, dupTxnId: undefined, dupDivId: undefined };
+      // keep the previously chosen action if the user already decided
+      return p.dup === dup && p.action !== "add" ? { ...p, dupTradeId, dupTxnId, dupDivId } : { ...p, dup, dupTradeId, dupTxnId, dupDivId, action: "add" };
+    });
   }
 
   function runImport() {
@@ -334,9 +331,9 @@ export function ImportStatementDialog({ trigger }: { trigger?: ReactNode }) {
       target = addAccount({ name: newName.trim(), institution: institution === "generic" ? "Imported statement" : institution, type: "brokerage" as AccountType, balance: 0, balanceDate: new Date().toISOString().slice(0, 10), currency: base }).id;
     }
     if (!target) return;
-    reviewDuplicates(target);
+    const final = target === accountId ? reviewed(parsed, target) : parsed;
     let count = 0;
-    for (const p of parsed) {
+    for (const p of final) {
       if (p.kind === "skip" || p.action === "skip") continue;
       if (p.kind === "trade") {
         if (p.action === "update" && p.dupTradeId) {
