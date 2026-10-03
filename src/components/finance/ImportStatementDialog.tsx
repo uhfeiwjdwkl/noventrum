@@ -218,7 +218,7 @@ async function resolveTickerForName(name: string): Promise<{ symbol: string; nam
   }
   // 2. public ticker search
   try {
-    const matches = await searchSymbols({ query: name });
+    const matches = await searchSymbols({ data: { query: name } });
     const hit = matches.find((m) => norm(m.name).includes(n) || n.includes(norm(m.name))) ?? matches[0];
     if (hit) return { symbol: hit.symbol, name: hit.name };
   } catch {
@@ -232,7 +232,7 @@ async function resolveNameForSymbol(symbol: string): Promise<string> {
   const held = state.trades.find((t) => t.symbol.toUpperCase() === symbol.toUpperCase());
   if (held?.name) return held.name;
   try {
-    const matches = await searchSymbols({ query: symbol });
+    const matches = await searchSymbols({ data: { query: symbol } });
     const hit = matches.find((m) => m.symbol.toUpperCase() === symbol.toUpperCase()) ?? matches[0];
     if (hit?.name) return hit.name;
   } catch {
