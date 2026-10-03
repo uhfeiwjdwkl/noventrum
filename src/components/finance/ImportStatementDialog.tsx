@@ -350,7 +350,10 @@ export function ImportStatementDialog({ trigger }: { trigger?: ReactNode }) {
       } else {
         if (p.action === "update" && p.dupTxnId) {
           const existing = transactions.find((t) => t.id === p.dupTxnId);
-          if (existing) addTransaction({ ...existing, date: p.date, amount: p.amount, merchant: p.merchant || existing.merchant, currency: p.currency });
+          if (existing) {
+            const { id: _drop, tradeId: _t, dividendId: _d, ...rest } = existing;
+            addTransaction({ ...rest, date: p.date, amount: p.amount, merchant: p.merchant || existing.merchant, currency: p.currency });
+          }
         } else {
           addTransaction({ date: p.date, accountId: target, amount: p.amount, currency: p.currency, kind: p.amount >= 0 ? "income" : "expense", category: p.category || "Imported", merchant: p.merchant || "Imported transaction" });
         }
@@ -389,7 +392,7 @@ export function ImportStatementDialog({ trigger }: { trigger?: ReactNode }) {
           <div className="rounded-md border bg-muted/30 p-3 text-sm">
             <strong>{importable.length}</strong> importable rows{refs.length ? ` (${refs.slice(0, 4).join(", ")})` : ""}, {parsed.filter((p) => p.kind === "skip").length} ignored{dupCount > 0 ? `, ${dupCount} possible duplicates` : ""}. The destination account applies to this import.
           </div>
-          <div><Label>Destination account</Label><Select value={accountId} onValueChange={(v) => { setAccountId(v); if (v !== "new") reviewDuplicates(v); }}><SelectTrigger className="mt-1.5"><SelectValue placeholder="Link or create account" /></SelectTrigger><SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}<SelectItem value="new">Create new account…</SelectItem></SelectContent></Select></div>
+          <div><Label>Destination account</Label><Select value={accountId} onValueChange={(v) => { setAccountId(v); if (v !== "new") setParsed((prev) => reviewed(prev, v)); }}><SelectTrigger className="mt-1.5"><SelectValue placeholder="Link or create account" /></SelectTrigger><SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}<SelectItem value="new">Create new account…</SelectItem></SelectContent></Select></div>
           {accountId === "new" && <div><Label>New account name</Label><Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={refs[0] || "Imported brokerage"} className="mt-1.5" /></div>}
           <div className="rounded-md border">
             <table className="w-full text-sm">
