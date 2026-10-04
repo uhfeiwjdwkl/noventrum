@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Area, ComposedChart, CartesianGrid, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Coins, Loader2, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinance } from "@/lib/finance/store";
-import { accountBalanceAt, fmtCurrency, type Trade, type Transaction } from "@/lib/finance/data";
+import { accountBalanceAt, accountCurrencySplit, fmtCurrency, type Trade, type Transaction } from "@/lib/finance/data";
 import { getHistory } from "@/lib/prices.functions";
-import { BuySellDialog, AddDividendDialog } from "@/components/finance/ExtraDialogs";
+import { BuySellDialog, AddDividendDialog, ExchangeDialog, TransferDialog } from "@/components/finance/ExtraDialogs";
+import { AddTransactionDialog } from "@/components/finance/AddDialogs";
 import { BulkControls, SelectBox, refForTxn, useSelection } from "@/components/finance/BulkEdit";
 import { TickerFlag } from "@/components/finance/TickerFlag";
 
@@ -211,6 +212,16 @@ export function AccountDialog({ accountId, open, onOpenChange }: { accountId: st
             {acctTrades.length > 0 && <span>Cash <strong className="num">{fmtCurrency(cash, { currency: cur })}</strong></span>}
             {acctTrades.length > 0 && <span>Investments <strong className="num">{fmtCurrency(total - cash, { currency: cur })}</strong></span>}
             <span>Entries <strong className="num">{ledger.length}</strong></span>
+            {accountCurrencySplit(account, transactions, today).map(([c, v]) => (
+              <span key={c} className="text-muted-foreground">Holding <strong className="num text-foreground">{fmtCurrency(v, { currency: c })}</strong> {c}</span>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <AddTransactionDialog defaultKind="income" defaultAccountId={account.id} trigger={<Button size="sm" variant="outline" className="gap-1.5"><ArrowDownLeft className="h-4 w-4" />Money in</Button>} />
+            <AddTransactionDialog defaultKind="expense" defaultAccountId={account.id} trigger={<Button size="sm" variant="outline" className="gap-1.5"><ArrowUpRight className="h-4 w-4" />Money out</Button>} />
+            <TransferDialog defaultAccountId={account.id} trigger={<Button size="sm" variant="outline" className="gap-1.5"><ArrowLeftRight className="h-4 w-4" />Transfer</Button>} />
+            <ExchangeDialog defaultAccountId={account.id} trigger={<Button size="sm" variant="outline" className="gap-1.5"><Coins className="h-4 w-4" />Forex</Button>} />
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
