@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,7 +40,7 @@ import {
   Briefcase,
   ArrowLeftRight,
 } from "lucide-react";
-import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog, ExchangeDialog } from "./ExtraDialogs";
+import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog, ExchangeDialog, TransferDialog } from "./ExtraDialogs";
 import { useFinance } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import type { AccountType, TxnKind, RecurUnit } from "@/lib/finance/data";
@@ -131,11 +131,13 @@ export function AddTransactionDialog({
   open,
   onOpenChange,
   defaultKind,
+  defaultAccountId,
 }: {
   trigger?: ReactNode;
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
   defaultKind?: TxnKind;
+  defaultAccountId?: string;
 }) {
   const [internal, setInternal] = useState(false);
   const isOpen = open ?? internal;
@@ -149,7 +151,8 @@ export function AddTransactionDialog({
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [kind, setKind] = useState<TxnKind>(defaultKind ?? "expense");
-  const [accountId, setAccountId] = useState<string>("");
+  const [accountId, setAccountId] = useState<string>(defaultAccountId ?? "");
+  useEffect(() => { if (isOpen && defaultAccountId) setAccountId(defaultAccountId); }, [isOpen, defaultAccountId]);
   const [date, setDate] = useState(today());
   const [notes, setNotes] = useState("");
   const [recurring, setRecurring] = useState(false);
@@ -201,7 +204,7 @@ export function AddTransactionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add transaction</DialogTitle>
-          <DialogDescription>Log income, an expense or a transfer.</DialogDescription>
+          <DialogDescription>Log money coming in or going out. Use Transfer for moves between your own accounts.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid grid-cols-2 gap-3">
@@ -212,7 +215,6 @@ export function AddTransactionDialog({
                 <SelectContent>
                   <SelectItem value="expense">Expense</SelectItem>
                   <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="transfer">Transfer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -394,7 +396,7 @@ export function AddGoalDialog({
 
 /* ------------------------------- AddMenu ------------------------------- */
 
-type MenuKind = "exchange" | "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
+type MenuKind = "transfer" | "exchange" | "account" | "transaction" | "trade" | "budget" | "goal" | "property" | "physical" | "dividend" | "income-source";
 
 export function AddMenu() {
   const [open, setOpen] = useState<MenuKind | null>(null);
@@ -408,7 +410,8 @@ export function AddMenu() {
           <DropdownMenuLabel>Log a transaction</DropdownMenuLabel>
           <DropdownMenuItem onClick={() => setOpen("transaction")}><Receipt className="h-4 w-4 mr-2" />Income / Expense</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("trade")}><ArrowLeftRight className="h-4 w-4 mr-2" />Buy / Sell asset</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpen("exchange")}><ArrowLeftRight className="h-4 w-4 mr-2" />Currency exchange</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("transfer")}><ArrowLeftRight className="h-4 w-4 mr-2" />Transfer between accounts</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen("exchange")}><Coins className="h-4 w-4 mr-2" />Forex transaction</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen("dividend")}><Coins className="h-4 w-4 mr-2" />Dividend</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Set up</DropdownMenuLabel>
@@ -423,6 +426,7 @@ export function AddMenu() {
       <AddAccountDialog open={open === "account"} onOpenChange={(o) => setOpen(o ? "account" : null)} />
       <AddTransactionDialog open={open === "transaction"} onOpenChange={(o) => setOpen(o ? "transaction" : null)} />
       <BuySellDialog open={open === "trade"} onOpenChange={(o) => setOpen(o ? "trade" : null)} />
+      <TransferDialog open={open === "transfer"} onOpenChange={(o) => setOpen(o ? "transfer" : null)} />
       <ExchangeDialog open={open === "exchange"} onOpenChange={(o) => setOpen(o ? "exchange" : null)} />
       <AddDividendDialog open={open === "dividend"} onOpenChange={(o) => setOpen(o ? "dividend" : null)} />
       <AddPropertyDialog open={open === "property"} onOpenChange={(o) => setOpen(o ? "property" : null)} />

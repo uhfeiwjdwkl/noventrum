@@ -17,7 +17,7 @@ import type {
   FxHistory,
   FxMap,
 } from "./data";
-import { deriveHoldings, dueDates, setDisplayCurrency, type SymbolMeta } from "./data";
+import { deriveHoldings, dueDates, setDisplayCurrency, setLiveFx, type SymbolMeta } from "./data";
 import {
   getQuotes,
   getHistory,
@@ -210,6 +210,19 @@ export interface FinanceState {
     fees?: number;
     notes?: string;
   }) => void;
+  /** Convert cash into another currency while keeping it inside the same account. */
+  recordInAccountFx: (x: {
+    date: string;
+    accountId: string;
+    fromCurrency: string;
+    toCurrency: string;
+    amount: number;
+    rate: number;
+    fees?: number;
+    notes?: string;
+  }) => void;
+  /** Move money between two of your own accounts (not income or spending). */
+  recordTransfer: (x: { date: string; fromAccountId: string; toAccountId: string; amount: number; received?: number; notes?: string }) => void;
 
   addBudget: (b: Omit<Budget, "id" | "spent"> & { spent?: number }) => Budget;
   deleteBudget: (id: string) => void;
@@ -547,6 +560,38 @@ export const useFinance = create<FinanceState>()(
         void get().refreshFx();
       },
 
+      recordInAccountFx: (x) => {
+        const acct = get().accounts.find((a) => a.id === x.accountId);
+        if (!acct || x.fromCurrency === x.toCurrency) return;
+        const fees = x.fees ?? 0;
+        const toAmount = Math.max(0, (x.amount - fees) * x.rate);
+        const label = `${x.fromCurrency} → ${x.toCurrency}`;
+        const base = { date: x.date, accountId: acct.id, kind: "transfer" as const, category: "Currency exchange", merchant: label };
+        const out: Transaction = {
+          ...base, id: uid(), amount: -x.amount, currency: x.fromCurrency,
+          held: x.fromCurrency !== acct.currency || undefined,
+          notes: `rate ${x.rate}${fees ? ` · fees ${fees} ${x.fromCurrency}` : ""}${x.notes ? ` · ${x.notes}` : ""}`,
+        };
+        const inn: Transaction = {
+          ...base, id: uid(), amount: toAmount, currency: x.toCurrency,
+          held: x.toCurrency !== acct.currency || undefined,
+          notes: `rate ${x.rate}`,
+        };
+        set((s) => ({ transactions: [out, inn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)) }));
+        void get().refreshFx();
+      },
+
+      recordTransfer: (x) => {
+        const accts = get().accounts;
+        const from = accts.find((a) => a.id === x.fromAccountId);
+        const to = accts.find((a) => a.id === x.toAccountId);
+        if (!from || !to || from.id === to.id) return;
+        const base = { date: x.date, kind: "transfer" as const, category: "Transfer", notes: x.notes };
+        const out: Transaction = { ...base, id: uid(), accountId: from.id, amount: -Math.abs(x.amount), currency: from.currency, merchant: `To ${to.name}` };
+        const inn: Transaction = { ...base, id: uid(), accountId: to.id, amount: Math.abs(x.received ?? x.amount), currency: to.currency, merchant: `From ${from.name}` };
+        set((s) => ({ transactions: [out, inn, ...s.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)) }));
+      },
+
       /* ------------------------------ budgets ------------------------------ */
       addBudget: (b) => {
         const budget: Budget = { ...b, id: uid(), spent: b.spent ?? 0 };
@@ -808,6 +853,7 @@ export const useFinance = create<FinanceState>()(
         get().properties.forEach((p) => currencies.add(p.currency));
         get().physicalAssets.forEach((a) => currencies.add(a.currency));
         get().trades.forEach((t) => t.currency && currencies.add(t.currency));
+        get().transactions.forEach((t) => t.held && t.currency && currencies.add(t.currency));
         const symbols = Array.from(currencies);
         try {
           const rates = await getFxRates({ data: { base, symbols } });
@@ -1053,3 +1099,7 @@ export function hydrateFinance() {
     void s.backfillFxRates();
   });
 }
+
+// Keep the live FX registry in sync so held foreign cash is valued at today's rate.
+setLiveFx(useFinance.getState().fxRates, useFinance.getState().settings.baseCurrency);
+useFinance.subscribe((st) => setLiveFx(st.fxRates, st.settings.baseCurrency));

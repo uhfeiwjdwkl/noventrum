@@ -584,32 +584,41 @@ export function AddIncomeSourceDialog({
 /* ---------------------------- Currency exchange ---------------------------- */
 
 export function ExchangeDialog({
-  trigger, open, onOpenChange,
-}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void }) {
+  trigger, open, onOpenChange, defaultAccountId,
+}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void; defaultAccountId?: string }) {
   const [internal, setInternal] = useState(false);
   const isOpen = open ?? internal;
   const setOpen = onOpenChange ?? setInternal;
   const accounts = useFinance((s) => s.accounts);
   const recordExchange = useFinance((s) => s.recordExchange);
+  const recordInAccountFx = useFinance((s) => s.recordInAccountFx);
   const cash = accounts.filter((a) => ["checking", "savings", "cash", "brokerage"].includes(a.type));
 
-  const [fromId, setFromId] = useState("");
+  const [mode, setMode] = useState<"same" | "between">("same");
+  const [fromId, setFromId] = useState(defaultAccountId ?? "");
   const [toId, setToId] = useState("");
+  const [fromCur, setFromCur] = useState("");
+  const [toCur, setToCur] = useState("");
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("");
   const [fees, setFees] = useState("");
+  const [notes, setNotes] = useState("");
   const [date, setDate] = useState(today());
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => { if (isOpen && defaultAccountId) setFromId(defaultAccountId); }, [isOpen, defaultAccountId]);
+
   const from = cash.find((a) => a.id === fromId);
   const to = cash.find((a) => a.id === toId);
+  const srcCur = mode === "same" ? (fromCur || from?.currency || "") : (from?.currency ?? "");
+  const dstCur = mode === "same" ? toCur : (to?.currency ?? "");
   const received = (Number(amount) - (Number(fees) || 0)) * (Number(rate) || 0);
 
   async function fetchRate() {
-    if (!from || !to) return;
+    if (!srcCur || !dstCur) return;
     setLoading(true);
     try {
-      const r = await getFxRateAt({ data: { from: from.currency ?? "AUD", to: to.currency ?? "AUD", date } });
+      const r = await getFxRateAt({ data: { from: srcCur, to: dstCur, date } });
       if (r > 0) setRate(String(Number(r.toFixed(6))));
       else toast.error("No rate found for that date");
     } catch {
@@ -621,18 +630,17 @@ export function ExchangeDialog({
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!from || !to || from.id === to.id) return toast.error("Pick two different accounts");
+    if (!from) return toast.error("Pick an account");
     if (!amount || !rate) return toast.error("Enter an amount and rate");
-    recordExchange({
-      date,
-      fromAccountId: from.id,
-      toAccountId: to.id,
-      amount: Number(amount),
-      rate: Number(rate),
-      fees: Number(fees) || 0,
-    });
-    toast.success(`Exchanged ${from.currency} → ${to.currency}`);
-    setAmount(""); setRate(""); setFees("");
+    if (mode === "same") {
+      if (!dstCur || dstCur === srcCur) return toast.error("Pick a different currency to convert into");
+      recordInAccountFx({ date, accountId: from.id, fromCurrency: srcCur, toCurrency: dstCur, amount: Number(amount), rate: Number(rate), fees: Number(fees) || 0, notes: notes.trim() || undefined });
+    } else {
+      if (!to || from.id === to.id) return toast.error("Pick two different accounts");
+      recordExchange({ date, fromAccountId: from.id, toAccountId: to.id, amount: Number(amount), rate: Number(rate), fees: Number(fees) || 0, notes: notes.trim() || undefined });
+    }
+    toast.success(`Exchanged ${srcCur} → ${dstCur}`);
+    setAmount(""); setRate(""); setFees(""); setNotes(""); setToCur("");
     setOpen(false);
   }
 
@@ -641,54 +649,151 @@ export function ExchangeDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Exchange currency</DialogTitle>
+          <DialogTitle>Forex transaction</DialogTitle>
           <DialogDescription>
-            Move money between two accounts in different currencies. The position is held in the
-            destination currency and valued in your default currency everywhere else.
+            Convert money into another currency — kept in the same account, or moved to another account.
+            Foreign cash is valued at today's exchange rate in the account balance.
           </DialogDescription>
         </DialogHeader>
-        {cash.length < 2 ? (
-          <p className="text-sm text-muted-foreground">
-            Add at least two accounts (one per currency) before making an exchange.
-          </p>
+        {cash.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Add an account first.</p>
         ) : (
           <form onSubmit={submit} className="grid gap-4">
+            <div className="grid grid-cols-2 gap-1 rounded-md border border-border p-1">
+              {(["same", "between"] as const).map((m) => (
+                <button key={m} type="button" onClick={() => setMode(m)}
+                  className={"rounded px-2 py-1.5 text-sm transition " + (mode === m ? "bg-primary text-primary-foreground" : "hover:bg-accent")}>
+                  {m === "same" ? "Within one account" : "Between accounts"}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>From account</Label>
-                <Select value={fromId} onValueChange={setFromId}>
+                <Label>{mode === "same" ? "Account" : "From account"}</Label>
+                <Select value={fromId} onValueChange={(v) => { setFromId(v); setFromCur(""); }}>
                   <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>{cash.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>To account</Label>
-                <Select value={toId} onValueChange={setToId}>
-                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{cash.filter((a) => a.id !== fromId).map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+              {mode === "between" ? (
+                <div>
+                  <Label>To account</Label>
+                  <Select value={toId} onValueChange={setToId}>
+                    <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>{cash.filter((a) => a.id !== fromId).map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              ) : <div />}
             </div>
+            {mode === "same" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Convert from</Label><CurrencyPicker value={srcCur} onChange={setFromCur} className="mt-1.5" /></div>
+                <div><Label>Convert into</Label><CurrencyPicker value={toCur} onChange={setToCur} className="mt-1.5" /></div>
+              </div>
+            )}
             <div className="grid grid-cols-4 gap-3">
-              <div><Label>Amount {from ? `(${from.currency})` : ""}</Label><Input className="mt-1.5" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required /></div>
+              <div><Label>Amount {srcCur ? `(${srcCur})` : ""}</Label><Input className="mt-1.5" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required /></div>
               <div><Label>Fees</Label><Input className="mt-1.5" type="number" step="0.01" value={fees} onChange={(e) => setFees(e.target.value)} placeholder="0.00" /></div>
               <div><Label>Rate</Label><Input className="mt-1.5" type="number" step="0.000001" value={rate} onChange={(e) => setRate(e.target.value)} required /></div>
               <div><Label>Date</Label><Input className="mt-1.5" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
               <span className="text-muted-foreground">
-                {from && to ? `1 ${from.currency} = ${rate || "?"} ${to.currency}` : "Pick accounts to fetch a live rate"}
+                {srcCur && dstCur ? `1 ${srcCur} = ${rate || "?"} ${dstCur}` : "Pick currencies to fetch a rate"}
               </span>
               <div className="flex items-center gap-3">
-                {to && <span className="num font-medium">{received > 0 ? `${received.toFixed(2)} ${to.currency}` : "—"}</span>}
-                <Button type="button" size="sm" variant="outline" onClick={fetchRate} disabled={!from || !to || loading}>
-                  {loading ? "Fetching…" : "Live rate"}
+                {dstCur && <span className="num font-medium">{received > 0 ? `${received.toFixed(2)} ${dstCur}` : "—"}</span>}
+                <Button type="button" size="sm" variant="outline" onClick={fetchRate} disabled={!srcCur || !dstCur || loading}>
+                  {loading ? "Fetching…" : "Rate on date"}
                 </Button>
               </div>
             </div>
+            <div><Label>Notes</Label><Input className="mt-1.5" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit">Record exchange</Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------ Transfer ------------------------------ */
+
+export function TransferDialog({
+  trigger, open, onOpenChange, defaultAccountId,
+}: { trigger?: ReactNode; open?: boolean; onOpenChange?: (o: boolean) => void; defaultAccountId?: string }) {
+  const [internal, setInternal] = useState(false);
+  const isOpen = open ?? internal;
+  const setOpen = onOpenChange ?? setInternal;
+  const accounts = useFinance((s) => s.accounts);
+  const recordTransfer = useFinance((s) => s.recordTransfer);
+  const [fromId, setFromId] = useState(defaultAccountId ?? "");
+  const [toId, setToId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [received, setReceived] = useState("");
+  const [date, setDate] = useState(today());
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => { if (isOpen && defaultAccountId) setFromId(defaultAccountId); }, [isOpen, defaultAccountId]);
+
+  const from = accounts.find((a) => a.id === fromId);
+  const to = accounts.find((a) => a.id === toId);
+  const crossCur = !!from && !!to && from.currency !== to.currency;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!from || !to || from.id === to.id) return toast.error("Choose two different accounts");
+    const amt = Math.abs(Number(amount) || 0);
+    if (!amt) return toast.error("Enter an amount");
+    if (crossCur && !Number(received)) return toast.error(`Enter the amount received in ${to.currency}`);
+    recordTransfer({ date, fromAccountId: from.id, toAccountId: to.id, amount: amt, received: crossCur ? Number(received) : undefined, notes: notes.trim() || undefined });
+    toast.success(`Moved to ${to.name}`);
+    setAmount(""); setReceived(""); setNotes(""); setToId("");
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Transfer between accounts</DialogTitle>
+          <DialogDescription>Move money between your own accounts. Transfers don't count as income or spending.</DialogDescription>
+        </DialogHeader>
+        {accounts.length < 2 ? (
+          <p className="text-sm text-muted-foreground">Add at least two accounts first.</p>
+        ) : (
+          <form onSubmit={submit} className="grid gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>From</Label>
+                <Select value={fromId} onValueChange={setFromId}>
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>To</Label>
+                <Select value={toId} onValueChange={setToId}>
+                  <SelectTrigger className="mt-1.5"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{accounts.filter((a) => a.id !== fromId).map((a) => <SelectItem key={a.id} value={a.id}>{a.name} ({a.currency})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Amount {from ? `(${from.currency})` : ""}</Label><Input className="mt-1.5" type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required /></div>
+              <div><Label>Date</Label><Input className="mt-1.5" type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
+            </div>
+            {crossCur && (
+              <div><Label>Received ({to!.currency})</Label><Input className="mt-1.5" type="number" step="0.01" value={received} onChange={(e) => setReceived(e.target.value)} required /></div>
+            )}
+            <div><Label>Notes</Label><Input className="mt-1.5" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" /></div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit">Record transfer</Button>
             </DialogFooter>
           </form>
         )}
