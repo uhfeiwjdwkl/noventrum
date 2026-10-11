@@ -48,7 +48,7 @@ const SECTIONS = [
   {
     id: "transactions", title: "Income, expenses & recurring entries", to: "/transactions",
     steps: [
-      "Open + Add → Transaction, or use Money in / Money out inside an account. Choose income or expense, then enter the merchant or payer, amount, category, account, date and optional notes.",
+      "Open + Add → Income / Expense, or use Money in / Money out inside an account. Choose income or expense, then enter the merchant or payer, amount, category, account, date and optional notes.",
       "Enter the amount as a positive number in the form: the income/expense choice determines whether money comes in or goes out.",
       "Use Income to review earnings by source, Expenses to review spending, and Transactions for the combined ledger. Use the search and filters on those pages to narrow the list.",
       "For a repeating payment, enable recurring and choose how often it repeats: every chosen number of days, weeks or months. Set its starting date and, optionally, an ending date.",
@@ -81,7 +81,7 @@ const SECTIONS = [
   {
     id: "investments", title: "Stocks, ETFs, commodities & trades", to: "/investments",
     steps: [
-      "Use + Add → Buy / Sell to record an investment transaction. Search for the ticker, check the exchange and currency, then choose the settlement account.",
+      "Use + Add → Buy / Sell asset to record an investment transaction. Search for the ticker, check the exchange and currency, then choose the settlement account.",
       "Enter buy or sell, date, number of shares or units, unit price, fees and any tax. The asset name follows the selected ticker; check that it is the instrument you intended.",
       "Changing the date attempts to fill the price from that day’s historical market price. You can overwrite it with your actual execution price, which may differ from the daily close.",
       "Holdings are derived from your trades, not entered as a separate starting position. Backlog earlier buys and sells with their real dates to build a useful history.",
@@ -119,7 +119,7 @@ const SECTIONS = [
       "Open an asset’s chart and choose a period to review its market history. A watchlist entry alone does not add a holding or change your net worth.",
       "A ticker warning means a recorded trade price is more than 10% away from that day’s market price. Check the ticker, currency, date and price before deciding whether the entry is wrong.",
       "Dismiss a reviewed warning, or switch Flag possible wrong tickers off in Settings. Restore cleared warnings there if you want those tickers checked again.",
-      "Open the bell for notifications. Large daily market-move notices use a move of more than 10% for held assets; ticker-check notices are a separate kind of warning.",
+      "Open the bell for notifications about budgets, goals, recurring entries, account issues and ticker checks. Daily market-move notices use a move of more than 10% for held assets. Open a notice to visit its related page, or dismiss reviewed notices.",
     ],
     notes: ["A warning is a prompt to review, not proof of a mistake. The daily closing price may legitimately differ from your execution price, especially in a volatile market."],
   },
@@ -162,9 +162,9 @@ const SECTIONS = [
     steps: [
       "Use Property for real estate and Other Assets for vehicles, collectibles, jewellery and other physical items. Add the asset from its page or the + Add menu.",
       "Enter the purchase details, cost and current estimated value. For property, include the relevant mortgage and acquisition costs where the form provides them.",
-      "Open Value history to add valuations with specific dates. The latest recorded valuation becomes the current value, and earlier dated values help build historical net worth.",
+      "Open Value history on Property, or Add valuation on Other Assets, to add valuations with specific dates. The latest recorded valuation becomes the current value, and earlier dated values help build historical net worth.",
       "Use the valuation chart to review changes and compare two points. Delete an incorrect valuation from its history rather than replacing all of the asset’s past values.",
-      "When an asset is sold, use its sale controls and enter the actual sale details. Check the resulting asset status and receiving cash account.",
+      "For property, use the sale form to record the sale date and price and mark it sold. Check your account ledger separately and record the actual cash received if it is not already there; marking an asset sold is not a substitute for recording the bank movement.",
     ],
     notes: ["These values are your estimates or recorded valuations; Noventrum does not automatically appraise a property, car or collectible."],
   },
