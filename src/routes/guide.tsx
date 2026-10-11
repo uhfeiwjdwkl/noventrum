@@ -208,7 +208,7 @@ function GuidePage() {
           <BookOpen className="mt-0.5 h-6 w-6 shrink-0 text-primary" />
           <p className="max-w-3xl text-sm leading-7 text-muted-foreground">Find the task you need below. Each section explains where to go, what to enter and how the result affects your finances.</p>
         </div>
-        <nav aria-label="Guide topics" className="mb-10 border-b border-border pb-8">
+        <nav id="guide-top" aria-label="Guide topics" className="mb-10 scroll-mt-24 border-b border-border pb-8">
           <h2 className="mb-4 text-lg font-semibold">In this guide</h2>
           <ol className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
             {SECTIONS.map((section, index) => (
