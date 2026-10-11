@@ -22,11 +22,14 @@ import {
   Home,
   Package,
   Coins,
+  BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { AddMenu } from "@/components/finance/AddDialogs";
 import { NotificationsMenu } from "@/components/finance/Notifications";
 import { KommenszlapfAccountButton, KommenszlapfAccountDialog } from "@/components/auth/KommenszlapfAccount";
@@ -49,6 +52,7 @@ const NAV = [
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/guide", label: "Guide", icon: BookOpen },
 ] as const;
 
 function useTheme() {
@@ -139,34 +143,29 @@ export function AppShell({ children, title, subtitle, actions }: { children: Rea
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
           </Button>
 
-          <div className="relative group flex items-center">
+          <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition-colors" aria-label="Noventrum home">
               <img src="/noventrum-logo.png" alt="Noventrum logo" className="h-8 w-8 rounded-md object-contain" />
               <span className="font-semibold tracking-tight text-lg">Noventrum</span>
             </Link>
-            <button
-              onClick={() => window.location.reload()}
-              className="ml-1 hidden group-hover:inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Reload"
-              type="button"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-            </button>
-            <div className="invisible group-hover:visible absolute left-0 top-full mt-1 min-w-[260px] rounded-lg border border-border bg-popover text-popover-foreground shadow-lg p-1 z-50">
-              <a
-                href="https://kommenszlapf.website"
-                className="flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted"
-              >
-                <span>Return to kommenszlapf.website</span>
-                <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-              </a>
-              <Link
-                to="/guide"
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted"
-              >
-                Guide
-              </Link>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Open Noventrum menu" title="Guide and Noventrum links">
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                <DropdownMenuItem asChild>
+                  <Link to="/guide" className="min-h-10"><BookOpen className="h-4 w-4" />Guide</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="https://kommenszlapf.website" className="min-h-10"><ExternalLink className="h-4 w-4" />Return to kommenszlapf.website</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => window.location.reload()} className="min-h-10">
+                  <RefreshCw className="h-4 w-4" />Reload
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <Clock />
