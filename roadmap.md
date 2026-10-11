@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Make Guide navigation reliable and document all current app features.
+
 - [ ] Verify historical FX, backdated holdings, sales proceeds, and realized P/L calculations.
 - [ ] Improve statement parsing and automatic investment/trade detection.
 - [ ] Import statement entries into the selected account ledger without replacing existing data.
