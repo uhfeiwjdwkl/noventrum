@@ -153,7 +153,7 @@ export function BuySellDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editTrade ? "Edit trade" : "Buy or sell an asset"}</DialogTitle>
           <DialogDescription>Search any stock, ETF, crypto or commodity — prices come from live market data. Backdate freely; holdings and past net worth are recalculated from the ledger.</DialogDescription>
