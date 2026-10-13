@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFinance } from "@/lib/finance/store";
+import { useFinance, useFinanceApi } from "@/lib/finance/store";
 import type { AssetClass, Dividend, Trade } from "@/lib/finance/data";
 import { getFxRateAt, getPriceAt } from "@/lib/prices.functions";
 import { SymbolSearch } from "@/components/finance/SymbolSearch";
@@ -74,7 +74,8 @@ export function BuySellDialog({
   const [tax, setTax] = useState(editTrade?.tax ? String(editTrade.tax) : "");
   const [date, setDate] = useState(editTrade?.date ?? today());
   const [accountId, setAccountId] = useState<string>(editTrade?.accountId ?? "");
-  const [currency, setCurrency] = useState(editTrade?.currency ?? defaultCurrency ?? useFinance.getState().settings.baseCurrency);
+  const financeApi = useFinanceApi();
+  const [currency, setCurrency] = useState(editTrade?.currency ?? defaultCurrency ?? financeApi.getState().settings.baseCurrency);
   const [loading, setLoading] = useState(false);
 
   // Whenever the date (or asset) changes, pull that day's close from the price sources.
@@ -275,7 +276,8 @@ export function AddPropertyDialog({
   const [currentValue, setCurrentValue] = useState("");
   const [fees, setFees] = useState("");
   const [tax, setTax] = useState("");
-  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
+  const financeApi = useFinanceApi();
+  const [currency, setCurrency] = useState(financeApi.getState().settings.baseCurrency);
   const [linkedMortgageAccountId, setLinked] = useState<string>("");
   const [notes, setNotes] = useState("");
 
@@ -364,7 +366,8 @@ export function AddPhysicalDialog({
   const [currentValue, setCurrentValue] = useState("");
   const [fees, setFees] = useState("");
   const [tax, setTax] = useState("");
-  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
+  const financeApi = useFinanceApi();
+  const [currency, setCurrency] = useState(financeApi.getState().settings.baseCurrency);
   const [notes, setNotes] = useState("");
 
   function submit(e: React.FormEvent) {
@@ -451,7 +454,8 @@ export function AddDividendDialog({
   const [amount, setAmount] = useState(editDividend ? String(editDividend.amount) : "");
   const [tax, setTax] = useState(editDividend?.tax ? String(editDividend.tax) : "");
   const [accountId, setAccountId] = useState(editDividend?.accountId ?? "");
-  const [currency, setCurrency] = useState(editDividend?.currency ?? useFinance.getState().settings.baseCurrency);
+  const financeApi = useFinanceApi();
+  const [currency, setCurrency] = useState(editDividend?.currency ?? financeApi.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -529,7 +533,8 @@ export function AddIncomeSourceDialog({
   const [name, setName] = useState("");
   const [kind, setKind] = useState<"salary" | "rental" | "side" | "dividend" | "interest" | "other">("salary");
   const [monthly, setMonthly] = useState("");
-  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
+  const financeApi = useFinanceApi();
+  const [currency, setCurrency] = useState(financeApi.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

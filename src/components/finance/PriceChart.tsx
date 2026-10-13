@@ -93,6 +93,7 @@ export function PriceChart({
   height = 320,
   defaultRange = "1Y",
   className,
+  examplePoints,
 }: {
   symbol: string;
   currency?: string;
@@ -101,6 +102,8 @@ export function PriceChart({
   height?: number;
   defaultRange?: RangeKey;
   className?: string;
+  /** Optional illustrative history for isolated Guide examples; never fetched or persisted. */
+  examplePoints?: HistoryPoint[];
 }) {
   const [rangeKey, setRangeKey] = useState<RangeKey>(defaultRange);
   const [points, setPoints] = useState<HistoryPoint[]>([]);
@@ -116,7 +119,17 @@ export function PriceChart({
   const ranges = RANGES.filter((r) => r.key !== "Since first" || firstActivity);
 
   useEffect(() => {
-    const base = RANGES.find((r) => r.key === rangeKey)!;
+    const base = RANGES.find((r) => r.key === rangeKey) ?? RANGES[3];
+    if (examplePoints) {
+      const days = { "1M": 31, "3M": 92, "6M": 183, "1Y": 366, "5Y": 1826, "MAX": Infinity, "Since first": Infinity }[rangeKey];
+      const last = examplePoints.at(-1)?.date;
+      const from = base.key === "Since first" ? firstActivity : last && Number.isFinite(days) ? new Date(new Date(last).getTime() - days * 86400000).toISOString().slice(0, 10) : undefined;
+      setPoints(examplePoints.filter((p) => !from || p.date >= from));
+      setLoading(false);
+      setError(false);
+      setSelection([]);
+      return;
+    }
     const cfg = base.key === "Since first" ? (firstActivity ? rangeSince(firstActivity) : RANGES[3]) : base;
     let cancelled = false;
     setLoading(true);
@@ -133,7 +146,7 @@ export function PriceChart({
     return () => {
       cancelled = true;
     };
-  }, [symbol, rangeKey, firstActivity]);
+  }, [symbol, rangeKey, firstActivity, examplePoints]);
 
   const data = useMemo(
     () => withTradeMarkers(mine ? positionWorth(points, trades, dividends) : points, trades),

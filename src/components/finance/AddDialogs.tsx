@@ -41,7 +41,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { BuySellDialog, AddPropertyDialog, AddPhysicalDialog, AddDividendDialog, AddIncomeSourceDialog, ExchangeDialog, TransferDialog } from "./ExtraDialogs";
-import { useFinance } from "@/lib/finance/store";
+import { useFinance, useFinanceApi } from "@/lib/finance/store";
 import { CurrencyPicker } from "@/components/finance/CurrencyPicker";
 import type { AccountType, TxnKind, RecurUnit } from "@/lib/finance/data";
 import { toast } from "sonner";
@@ -67,7 +67,8 @@ export function AddAccountDialog({
   const [institution, setInstitution] = useState("");
   const [type, setType] = useState<AccountType>("checking");
   const [balance, setBalance] = useState("");
-  const [currency, setCurrency] = useState(useFinance.getState().settings.baseCurrency);
+  const financeApi = useFinanceApi();
+  const [currency, setCurrency] = useState(financeApi.getState().settings.baseCurrency);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
