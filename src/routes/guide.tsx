@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { BookOpen, ExternalLink } from "lucide-react";
+import { GuideExample } from "@/components/finance/GuideExamples";
 
 export const Route = createFileRoute("/guide")({
   head: () => ({ meta: [
@@ -235,6 +236,7 @@ function GuidePage() {
                 {section.steps.map((step) => <li key={step} className="pl-1">{step}</li>)}
               </ol>
               {"notes" in section && section.notes.map((note) => <p key={note} className="mt-5 max-w-3xl border-l-2 border-primary/40 pl-4 text-sm leading-7 text-muted-foreground">{note}</p>)}
+              <GuideExample section={section.id} />
               <a href="#guide-top" className="mt-5 inline-flex min-h-9 items-center text-xs text-primary hover:underline">Back to topics ↑</a>
             </section>
           ))}

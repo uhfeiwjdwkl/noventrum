@@ -1,4 +1,5 @@
-import { create } from "zustand";
+import { create, useStore, type StateCreator, type StoreApi } from "zustand";
+import { createContext, createElement, useContext, type ReactNode } from "react";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   Account,
@@ -314,9 +315,7 @@ const empty = {
   rebasing: false,
 };
 
-export const useFinance = create<FinanceState>()(
-  persist(
-    (set, get) => ({
+const financeCreator: StateCreator<FinanceState> = (set, get) => ({
       ...empty,
 
       /* ------------------------------ accounts ----------------------------- */
@@ -986,8 +985,10 @@ export const useFinance = create<FinanceState>()(
       },
 
       resetAll: () => set({ ...empty }),
-    }),
-    {
+    });
+
+const financeStore = create<FinanceState>()(
+  persist(financeCreator, {
       name: "noventrum-store-v2",
       version: 4,
       migrate: (persisted, version) => {
@@ -1081,6 +1082,40 @@ export const useFinance = create<FinanceState>()(
     },
   ),
 );
+
+export const FinanceContext = createContext<StoreApi<FinanceState> | null>(null);
+
+export function FinanceProvider({ store, children }: { store: StoreApi<FinanceState>; children: ReactNode }) {
+  return createElement(FinanceContext.Provider, { value: store }, children);
+}
+
+export function useFinanceApi() {
+  return useContext(FinanceContext) ?? financeStore;
+}
+
+export const useFinance = Object.assign(
+  function useFinance<T>(selector: (state: FinanceState) => T): T {
+    return useStore(useFinanceApi(), selector);
+  },
+  financeStore,
+);
+
+/** Practice instances share the real ledger actions, but never persist, sync or update global FX. */
+export function createPracticeFinance() {
+  const store = create<FinanceState>()(financeCreator);
+  store.setState({
+    settings: { ...empty.settings, currencies: [...DEFAULT_CURRENCIES], autoFlag: false, flagIgnore: [], dashboardCharts: [] },
+    refreshFx: async () => 0,
+    refreshFxHistory: async () => 0,
+    refreshHistory: async () => 0,
+    refreshAllHistory: async () => 0,
+    backfillFxRates: async () => 0,
+    refreshPrices: async () => ({ updated: 0, failed: 0 }),
+    refreshWatchlist: async () => {},
+    setBaseCurrency: async (baseCurrency) => store.setState((s) => ({ settings: { ...s.settings, baseCurrency } })),
+  });
+  return store;
+}
 
 export function hydrateFinance() {
   if (typeof window === "undefined") return;

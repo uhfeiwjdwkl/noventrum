@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Add interactive Guide examples using real app controls and isolated practice data.
+
 - [x] Make Guide navigation reliable and document all current app features.
 
 - [ ] Verify historical FX, backdated holdings, sales proceeds, and realized P/L calculations.
